@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <Copyright>Copyright © Nop Solutions, Ltd</Copyright>
-    <Company>Bluefin</Company>
-    <Authors>Bluefin</Authors>
+    <Copyright>Copyright © Bluefin®</Copyright>
+    <Company>Bluefin®</Company>
+    <Authors>Bluefin®</Authors>
     <PackageLicenseUrl>https://github.com/bluefin-developer-portal/nopCommerce-Plugin/blob/main/LICENSE</PackageLicenseUrl>
     <RepositoryUrl>https://github.com/bluefin-developer-portal/nopCommerce-Plugin/tree/main/Nop.Plugin.Payments.Bluefin</RepositoryUrl>
-    <PackageProjectUrl>https://www.nopcommerce.com/</PackageProjectUrl>
+    <PackageProjectUrl>https://www.bluefin.com/</PackageProjectUrl>
     <RepositoryType>Git</RepositoryType>
     <OutputPath>$(SolutionDir)\Presentation\Nop.Web\Plugins\Payments.Bluefin</OutputPath>
     <OutDir>$(OutputPath)</OutDir>
