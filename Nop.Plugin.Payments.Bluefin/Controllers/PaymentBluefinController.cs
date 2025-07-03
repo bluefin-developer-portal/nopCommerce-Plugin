@@ -148,7 +148,12 @@ public class PaymentBluefinController : BasePaymentController
     {
 
         await _bluefinTokenRepositoryService.InsertAsync(
-            new BluefinTokenEntry(customerId, bfTokenReference));
+            new BluefinTokenEntry
+            {
+                CustomerId = customerId,
+                BfTokenReference = bfTokenReference
+            }
+        );
 
 
         return Json(new { ok = true });

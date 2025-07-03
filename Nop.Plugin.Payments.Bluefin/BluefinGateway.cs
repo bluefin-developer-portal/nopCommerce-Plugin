@@ -291,7 +291,7 @@ public class BluefinGateway
             label = "my-instance-1", // TODO: Compose based on the Nop Customer Info?
             amount = customer.Amount,
             currency = customer.Currency,
-            bfTokenReferences = new List<string>(), // NOTE: DISABLE FOR NOW bfTokenReferences,
+            bfTokenReferences = bfTokenReferences, // new List<string>(), // NOTE: DISABLE FOR NOW bfTokenReferences,
             initializeTransaction = true,
             customer = new
             {
