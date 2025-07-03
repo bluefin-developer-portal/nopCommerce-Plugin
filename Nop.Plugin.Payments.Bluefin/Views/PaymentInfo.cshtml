@@ -2,8 +2,6 @@
 
 
 @{
-    // TODO: Fix on Continue - should keep the state of the checkout component. Gotta find a way to cache it somehow
-    // Looks like it is DOUBLING THE COMPONENT IF the ValidatePaymentFormAsync doesn't pass
     Layout = "";
     NopHtml.AddScriptParts(ResourceLocation.Head, BluefinPaymentDefaults.ScriptPath, excludeFromBundle: true);
 }
@@ -13,6 +11,7 @@
 
 <script asp-location="Head">
     ; (function () {
+
         const id = setInterval(() => {
             if (window.IframeV2 != null) {
                 clearInterval(id)
@@ -84,7 +83,7 @@
                 parentDivId: 'bluefin-iframe-container',
                 width: '100vh',
                 height: '60vh'
-            };
+            }
 
             let customer = {
                 CustomerId: '@customer.Id',
@@ -123,12 +122,12 @@
 
             const callbacks = {
                 iframeLoaded: function () {
-                    console.log('Iframe loaded');
+                    console.log('Iframe loaded')
                 },
                 checkoutComplete: function (data) {
-                    const bfTokenReference = data.bfTokenReference;
+                    const bfTokenReference = data.bfTokenReference
 
-                    // console.log('Checkout complete:', data);
+                    // console.log('Checkout complete:', data)
 
                     $.ajax({
                         async: true,
@@ -166,32 +165,41 @@
 
                 },
                 error: function (data) {
-                    console.error('Error:', data);
-                    // alert(JSON.stringify(data));
+                    console.error('Error:', data)
+                    // alert(JSON.stringify(data))
                 },
                 timeout: function (data) {
-                    console.log('Timeout:', data);
+                    console.log('Timeout:', data)
                 },
-            };
+            }
 
-            $.ajax({
-                async: true,
-                type: 'POST',
-                url: '@(Url.Action("InitIframe", "PaymentBluefin"))',
-                data: customer,
-                success: function (data) {
-                    window.IframeV2.init(iframeConfig,
-                        data.bearerToken,
-                        callbacks,
-                        null,
-                        '@devServer');
-                },
-                error: function (request, status, error) {
-                    alert(request.responseText)
-                }
-            })
+            // "Cache" the bearerToken in the current page so we keep keep the state of the checkout component after ValidatePaymentFormAsync
+            if (!window.bearerToken) {
+                $.ajax({
+                    async: true,
+                    type: 'POST',
+                    url: '@(Url.Action("InitIframe", "PaymentBluefin"))',
+                    data: customer,
+                    success: function (data) {
+                        window.bearerToken = data.bearerToken
+                        window.IframeV2.init(iframeConfig,
+                            data.bearerToken,
+                            callbacks,
+                            null,
+                            '@devServer')
+                    },
+                    error: function (request, status, error) {
+                        alert(request.responseText)
+                    }
+                })
+            } else {
+                window.IframeV2.init(iframeConfig,
+                    window.bearerToken,
+                    callbacks,
+                    null,
+                    '@devServer')
 
-
+            }
         }
     })();
 
