@@ -39,7 +39,7 @@ namespace Nop.Plugin.Payments.Bluefin;
 public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 {
     #region Fields
-    private readonly ILogger _logger;
+    // private readonly ILogger _logger;
 
     private readonly IGenericAttributeService _genericAttributeService;
     private readonly IWorkContext _workContext;
@@ -74,13 +74,12 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         _storeContext = storeContext;
         _genericAttributeService = genericAttributeService;
         _workContext = workContext;
-        _logger = logger;
         _notificationService = notificationService;
         _localizationService = localizationService;
         _settingService = settingService;
         _webHelper = webHelper;
         _bluefinPaymentSettings = bluefinPaymentSettings;
-        _gateway = new BluefinGateway(_logger, _bluefinPaymentSettings);
+        _gateway = new BluefinGateway(logger, _bluefinPaymentSettings);
     }
 
     #endregion
@@ -168,8 +167,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         var currency = await _workContext.GetWorkingCurrencyAsync();
 
-        await _logger.InsertLogAsync(
-            LogLevel.Debug,
+        await _gateway.LogDebug(
             "ProcessPaymentRequest orderGuid: " + orderGuid,
             "Transaction Metadata: "
             );
@@ -206,8 +204,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         {
 
 
-            await _logger.InsertLogAsync(
-                LogLevel.Debug,
+            await _gateway.LogDebug(
                 "Triggered ProcessPaymentAsync bfTokenReference: " + bfTokenReference,
                 "Transaction Res Metadata: " + JsonConvert.SerializeObject(transaction_res.Metadata)
                 );
@@ -230,8 +227,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 nop_store.Id
             );
 
-            await _logger.InsertLogAsync(
-                LogLevel.Debug,
+            await _gateway.LogDebug(
                 "Generic attribute cleanup",
                 await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
             );
@@ -281,8 +277,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         string bfTransactionId = Utility.ParseBfTransactionId(capturePaymentRequest.Order.CustomValuesXml);
 
-        await _logger.InsertLogAsync(
-            LogLevel.Debug,
+        await _gateway.LogDebug(
             "CaptureAsync CustomValuesXML",
             "bfTransactionId:" + bfTransactionId
         );
@@ -315,8 +310,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         var refundResult = new RefundPaymentResult();
         var amount = refundPaymentRequest.AmountToRefund.ToString("0.00");
 
-        await _logger.InsertLogAsync(
-            LogLevel.Debug,
+        await _gateway.LogDebug(
             "Triggered RefundAsync amount: " + amount,
             "Transaction Res Metadata: "
         );

@@ -165,21 +165,31 @@ public class BluefinLogger(ILogger logger, bool enabled)
                 message
             );
         }
-
     }
+
+    public async Task LogDebug(string source, string message)
+    {
+        if (_enabled)
+        {
+            await _logger.InsertLogAsync(
+                LogLevel.Debug,
+                source,
+                message
+            );
+        }
+    }
+
 }
 
-public class BluefinGateway
+public class BluefinGateway : BluefinLogger
 {
     private readonly BluefinPaymentSettings _bluefinPaymentSettings;
-    private readonly ILogger _logger;
     private readonly HttpClient _client;
-    private readonly string baseEnvURL;
+    private readonly string _baseEnvURL;
 
     public BluefinGateway(ILogger logger,
-        BluefinPaymentSettings bluefinPaymentSettings)
+        BluefinPaymentSettings bluefinPaymentSettings) : base(logger, bluefinPaymentSettings.EnableLogging)
     {
-        _logger = logger;
         _bluefinPaymentSettings = bluefinPaymentSettings;
         _client = new HttpClient();
 
@@ -191,11 +201,11 @@ public class BluefinGateway
             _client.DefaultRequestHeaders.Authorization
                  = new AuthenticationHeaderValue("Basic", AuthHeader);
 
-            baseEnvURL = BluefinPaymentDefaults.certEnv;
+            _baseEnvURL = BluefinPaymentDefaults.certEnv;
         }
         else
         {
-            baseEnvURL = BluefinPaymentDefaults.prodEnv;
+            _baseEnvURL = BluefinPaymentDefaults.prodEnv;
         }
     }
 
@@ -231,8 +241,7 @@ public class BluefinGateway
             if (!response.IsSuccessStatusCode)
             {
 
-                await _logger.InsertLogAsync(
-                    LogLevel.Error,
+                await LogError(
                     source,
                     "Request: " + JsonConvert.SerializeObject(request) + ", " + "Response " + jsonString
                 );
@@ -258,8 +267,7 @@ public class BluefinGateway
 
             if (!response.IsSuccessStatusCode)
             {
-                await _logger.InsertLogAsync(
-                    LogLevel.Error,
+                await LogError(
                     source,
                     "Request: " + JsonConvert.SerializeObject(request) + ", " + "Response " + jsonString
                 );
@@ -328,7 +336,7 @@ public class BluefinGateway
 
         var serializedBody = JsonConvert.SerializeObject(request);
 
-        requestMessage = new HttpRequestMessage(HttpMethod.Post, baseEnvURL + URI)
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
         {
             Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
         };
@@ -369,7 +377,7 @@ public class BluefinGateway
 
         var serializedBody = JsonConvert.SerializeObject(request);
 
-        requestMessage = new HttpRequestMessage(HttpMethod.Post, baseEnvURL + URI)
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
         {
             Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
         };
@@ -403,7 +411,7 @@ public class BluefinGateway
 
         var serializedBody = JsonConvert.SerializeObject(request);
 
-        requestMessage = new HttpRequestMessage(HttpMethod.Post, baseEnvURL + URI)
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
         {
             Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
         };
@@ -438,7 +446,7 @@ public class BluefinGateway
 
         var serializedBody = JsonConvert.SerializeObject(request);
 
-        requestMessage = new HttpRequestMessage(HttpMethod.Post, baseEnvURL + URI)
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
         {
             Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
         };
@@ -473,7 +481,7 @@ public class BluefinGateway
 
         var serializedBody = JsonConvert.SerializeObject(request);
 
-        requestMessage = new HttpRequestMessage(HttpMethod.Post, baseEnvURL + URI)
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
         {
             Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
         };
