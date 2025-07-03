@@ -1,0 +1,104 @@
+﻿@model Nop.Plugin.Payments.Bluefin.Models.ConfigurationModel
+
+@{
+    Layout = "_ConfigurePlugin";
+}
+
+<form asp-controller="PaymentBluefin" asp-action="Configure" method="post">
+    <div class="cards">
+        <div class="card card-default">
+            <div class="card-body">
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="ApiKeyId" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="ApiKeyId" asp-required="true" />
+                        <span asp-validation-for="ApiKeyId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="ApiKeySecret" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="ApiKeySecret" asp-required="true" html-attributes="@(new { value = Model.ApiKeySecret })" />
+                        <span asp-validation-for="ApiKeySecret" class="text-danger"></span>
+                    </div>
+                </div>
+
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="IFrameConfigId" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="IFrameConfigId" asp-required="true" />
+                        <span asp-validation-for="IFrameConfigId" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="AccountId" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="AccountId" asp-required="true" />
+                        <span asp-validation-for="AccountId" class="text-danger"></span>
+                    </div>
+                </div>
+
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="UseSandbox" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="UseSandbox" />
+                        <span asp-validation-for="UseSandbox" class="text-danger"></span>
+                    </div>
+                </div>
+
+               <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="Use3DS" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="Use3DS" />
+                        <span asp-validation-for="Use3DS" class="text-danger"></span>
+                    </div>
+                </div>
+
+               <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="UseAuthorizeOnly" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="UseAuthorizeOnly" />
+                        <span asp-validation-for="UseAuthorizeOnly" class="text-danger"></span>
+                    </div>
+                </div>
+
+               <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-label asp-for="EnableLogging" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="EnableLogging" />
+                        <span asp-validation-for="EnableLogging" class="text-danger"></span>
+                    </div>
+                </div>
+
+
+                <div class="form-group row">
+                    <div class="col-sm-9 offset-sm-3">
+                        <button type="submit" name="save" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</form>

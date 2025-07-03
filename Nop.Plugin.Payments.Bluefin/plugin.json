@@ -1,0 +1,11 @@
+﻿{
+  "Group": "Payment methods",
+  "FriendlyName": "Bluefin",
+  "SystemName": "Payments.Bluefin",
+  "Version": "1.0.0",
+  "SupportedVersions": [ "4.80", "4.90" ],
+  "Author": "nopCommerce team",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Payments.Bluefin.dll",
+  "Description": "Process Payments with Bluefin Checkout and Payment Gateway"
+}

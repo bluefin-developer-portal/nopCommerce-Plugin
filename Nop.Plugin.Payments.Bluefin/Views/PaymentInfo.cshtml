@@ -1,0 +1,201 @@
+@model PaymentInfoModel
+
+
+@{
+    // TODO: Fix on Continue - should keep the state of the checkout component. Gotta find a way to cache it somehow
+    // Looks like it is DOUBLING THE COMPONENT IF the ValidatePaymentFormAsync doesn't pass
+    Layout = "";
+    NopHtml.AddScriptParts(ResourceLocation.Head, BluefinPaymentDefaults.ScriptPath, excludeFromBundle: true);
+}
+
+<input asp-for="IFrameCompleted" id="IFrameCompleted" type="hidden" />
+<div id="bluefin-iframe-container"></div>
+
+<script asp-location="Head">
+    ; (function () {
+        const id = setInterval(() => {
+            if (window.IframeV2 != null) {
+                clearInterval(id)
+                loadIframe()
+            }
+        }, 111)
+
+        function isDigit(c) {
+            return c >= '0' && c <= '9'
+        }
+
+        function removeCurrency(amount) { // Remove currency sign from the start from PrepareOrderTotalsModelAsync => OrderTotalsModel.orderTotal
+
+            if (!isDigit(amount[0])) {
+                let inx = -1
+                for (let i = 1; i < amount.length; i++) {
+                    if (isDigit(amount[i])) {
+                        inx = i
+                        break
+                    }
+                }
+                return amount.slice(inx == -1 ? 0 : inx)
+
+            } else if (!isDigit(amount[amount.length - 1])) {
+                let inx = -1
+                for (let i = amount.length - 2; i >= 0; i--) {
+                    if (isDigit(amount[i])) {
+                        inx = i
+                        break
+                    }
+                }
+                return amount.slice(0, inx + 1)
+            }
+            return amount
+
+        }
+
+        function removeLeadingPlus(phoneNumber) {
+            return phoneNumber.replaceAll('&#x2B;', '')
+        }
+
+
+        function loadIframe() {
+            // if(window.BluefinIframe) return
+
+            // window.BluefinIframe = true
+
+            @{
+                    var customer = await workContext.GetCurrentCustomerAsync();
+                    var address = await addressService.GetAddressByIdAsync(customer.BillingAddressId ?? 0);
+                    var stateProvince = await stateProvinceService.GetStateProvinceByAddressAsync(address);
+                    var country = await countryService.GetCountryByAddressAsync(address);
+
+                    var shipping_address = await addressService.GetAddressByIdAsync(customer.ShippingAddressId ?? 0);
+                    var shipping_stateProvince = await stateProvinceService.GetStateProvinceByAddressAsync(shipping_address);
+                    var shipping_country = await countryService.GetCountryByAddressAsync(shipping_address);
+
+                    var store = await storeContext.GetCurrentStoreAsync();
+                    var cart = await shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+                    var shopping_model = await shoppingCartModelFactory.PrepareOrderTotalsModelAsync(cart, false);
+
+                    var currency = await workContext.GetWorkingCurrencyAsync();
+                    var devServer = bluefinPaymentSettings.UseSandbox ? 
+                        BluefinPaymentDefaults.CheckoutComponentCERT : BluefinPaymentDefaults.CheckoutComponentPROD;
+                }
+
+            const iframeConfig = {
+                parentDivId: 'bluefin-iframe-container',
+                width: '100vh',
+                height: '60vh'
+            };
+
+            let customer = {
+                CustomerId: '@customer.Id',
+                // TODO: Try to find the proper order total so that we don't have to do this
+                Amount: removeCurrency('@shopping_model.OrderTotal'),
+                Currency: '@currency.CurrencyCode',
+                Email: '@address?.Email',
+                BillingAddress: {
+                    FirstName: '@address?.FirstName',
+                    LastName: '@address?.LastName',
+                    PhoneNumber: '+' + removeLeadingPlus('@address?.PhoneNumber'),
+                    Address1: '@address?.Address1',
+                    Address2: '@address?.Address2',
+                    City: '@address?.City',
+                    State: '@stateProvince?.Abbreviation',
+                    Zip: '@address?.ZipPostalCode',
+                    Company: '@address?.Company',
+                    Country: '@country?.ThreeLetterIsoCode'
+                },
+                ShippingAddress: {
+                    FirstName: '@shipping_address?.FirstName',
+                    LastName: '@shipping_address?.LastName',
+                    PhoneNumber: '+' + removeLeadingPlus('@shipping_address?.PhoneNumber'),
+                    Address1: '@shipping_address?.Address1',
+                    Address2: '@shipping_address?.Address2',
+                    City: '@shipping_address?.City',
+                    State: '@shipping_stateProvince?.Abbreviation',
+                    Zip: '@shipping_address?.ZipPostalCode',
+                    Company: '@shipping_address?.Company',
+                    Country: '@shipping_country?.ThreeLetterIsoCode'
+                }
+            }
+
+            // console.log(customer)
+
+
+            const callbacks = {
+                iframeLoaded: function () {
+                    console.log('Iframe loaded');
+                },
+                checkoutComplete: function (data) {
+                    const bfTokenReference = data.bfTokenReference;
+
+                    // console.log('Checkout complete:', data);
+
+                    $.ajax({
+                        async: true,
+                        type: 'POST',
+                        url: '@(Url.Action("SetBluefinToken", "PaymentBluefin"))',
+                        data: {
+                            bfTokenReference,
+                        },
+                        success: function (data) {
+                            document.getElementById('IFrameCompleted').value = 'Checkout Completed'
+                        },
+                        error: function (request, status, error) {
+                            alert(request.responseText) // TODO: Be more specific when returning error response text from the controller. This essentially just gives us the C# exception.
+                        }
+                    })
+
+
+                    if (data.data.meta.savePaymentOption) {
+                        $.ajax({
+                            async: true,
+                            type: 'POST',
+                            url: '@(Url.Action("StoreBluefinToken", "PaymentBluefin"))',
+                            data: {
+                                customerId: '@customer.Id',
+                                bfTokenReference: bfTokenReference
+                            },
+                            success: function (data) {
+                            },
+                            error: function (request, status, error) {
+                                alert(request.responseText)
+                            }
+                        })
+
+                    }
+
+                },
+                error: function (data) {
+                    console.error('Error:', data);
+                    // alert(JSON.stringify(data));
+                },
+                timeout: function (data) {
+                    console.log('Timeout:', data);
+                },
+            };
+
+            $.ajax({
+                async: true,
+                type: 'POST',
+                url: '@(Url.Action("InitIframe", "PaymentBluefin"))',
+                data: customer,
+                success: function (data) {
+                    window.IframeV2.init(iframeConfig,
+                        data.bearerToken,
+                        callbacks,
+                        null,
+                        '@devServer');
+                },
+                error: function (request, status, error) {
+                    alert(request.responseText)
+                }
+            })
+
+
+        }
+    })();
+
+
+</script>
+
+@NopHtml.GenerateScripts(ResourceLocation.Head)
