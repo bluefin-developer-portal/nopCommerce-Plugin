@@ -18,9 +18,10 @@ public record ConfigurationModel : BaseNopModel
     [DataType(DataType.Password)]
     public string ApiKeySecret { get; set; }
 
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.AccountId")]
     public string AccountId { get; set; }
 
-    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.iFrameConfigId")]
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.IFrameConfigId")]
     public string IFrameConfigId { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.Use3DS")]

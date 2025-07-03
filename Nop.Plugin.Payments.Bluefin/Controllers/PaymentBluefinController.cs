@@ -158,11 +158,5 @@ public class PaymentBluefinController : BasePaymentController
 
         return Json(new { ok = true });
     }
-
-
-    public IActionResult PaymentInfo()
-    {
-        // var model = new PaymentInfoModel();
-        return View("~/Plugins/Payments.Bluefin/Views/PaymentInfo.cshtml"); // , model);
-    }
+    
 }

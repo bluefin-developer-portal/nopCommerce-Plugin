@@ -117,63 +117,83 @@
                 }
             }
 
-            // console.log(customer)
+            // console.debug(customer)
 
 
             const callbacks = {
                 iframeLoaded: function () {
-                    console.log('Iframe loaded')
+                    // Bypass the nopCommerce default
+                    let save_button = document.querySelector('button[onclick="PaymentInfo.save()"]')
+                    save_button && save_button.remove()
+                    console.debug('Iframe loaded')
                 },
-                checkoutComplete: function (data) {
+                checkoutComplete: async function (data) {
                     const bfTokenReference = data.bfTokenReference
 
-                    // console.log('Checkout complete:', data)
-
-                    $.ajax({
-                        async: true,
-                        type: 'POST',
-                        url: '@(Url.Action("SetBluefinToken", "PaymentBluefin"))',
-                        data: {
-                            bfTokenReference,
-                        },
-                        success: function (data) {
-                            document.getElementById('IFrameCompleted').value = 'Checkout Completed'
-                        },
-                        error: function (request, status, error) {
-                            alert(request.responseText) // TODO: Be more specific when returning error response text from the controller. This essentially just gives us the C# exception.
-                        }
-                    })
-
-
-                    if (data.data.meta.savePaymentOption) {
-                        $.ajax({
-                            async: true,
-                            type: 'POST',
-                            url: '@(Url.Action("StoreBluefinToken", "PaymentBluefin"))',
-                            data: {
-                                customerId: '@customer.Id',
-                                bfTokenReference: bfTokenReference
+                    try {
+                        let response = await fetch('@(Url.Action("SetBluefinToken", "PaymentBluefin"))', {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/x-www-form-urlencoded",
                             },
-                            success: function (data) {
-                            },
-                            error: function (request, status, error) {
-                                alert(request.responseText)
-                            }
+                            body: new URLSearchParams({
+                                bfTokenReference,
+                            })
+
                         })
 
+                        if(!response.ok) {
+                            let err = new Error("HTTP status code: " + response.status)
+                            err.response = response
+                            err.status = response.status
+                            throw err
+                        }
+
+
+                        if (data.data.meta.savePaymentOption) {
+                            let response = await fetch('@(Url.Action("StoreBluefinToken", "PaymentBluefin"))', {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/x-www-form-urlencoded",
+                                },
+                                body: new URLSearchParams({
+                                    customerId: '@customer.Id',
+                                    bfTokenReference,
+                                })
+
+                            })
+
+                            if(!response.ok) {
+                                let err = new Error("HTTP status code: " + response.status)
+                                err.response = response
+                                err.status = response.status
+                                throw err
+                            }
+
+                        }
+
+                    } catch (err) {
+                        // TODO: Be more specific when returning error response text from the controller. This essentially just gives us the C# exception.
+                        alert(err.toString())
+                        return
                     }
 
+                    document.getElementById('IFrameCompleted').value = 'Checkout Completed'
+                    PaymentInfo.save()
+
+                    // console.debug('Checkout complete:', data)
                 },
                 error: function (data) {
                     console.error('Error:', data)
                     // alert(JSON.stringify(data))
                 },
                 timeout: function (data) {
-                    console.log('Timeout:', data)
+                    console.debug('Timeout:', data)
                 },
             }
 
             // "Cache" the bearerToken in the current page so we keep keep the state of the checkout component after ValidatePaymentFormAsync
+            // This also gets reused if the customer clicks on the "Back" button. However, there is one edge case where if we change the customer-related information by going back, the checkout component won't be recreated in that page session.
             if (!window.bearerToken) {
                 $.ajax({
                     async: true,
