@@ -27,7 +27,7 @@ using Nop.Web.Framework.Controllers;
 public class PaymentBluefinController : BasePaymentController
 {
 
-    private readonly ILogger _logger;
+    // private readonly ILogger _logger;
     private readonly ISettingService _settingService;
     private readonly ILocalizationService _localizationService;
     private readonly INotificationService _notificationService;
@@ -53,7 +53,6 @@ public class PaymentBluefinController : BasePaymentController
         IWorkContext workContext,
         IStoreContext storeContext)
     {
-        _logger = logger;
         _localizationService = localizationService;
         _notificationService = notificationService;
         _settingService = settingService;
@@ -63,7 +62,7 @@ public class PaymentBluefinController : BasePaymentController
         _genericAttributeService = genericAttributeService;
         _bluefinTokenRepositoryService = bluefinTokenRepositoryService;
         _workContext = workContext;
-        _gateway = new BluefinGateway(_logger, _bluefinPaymentSettings);
+        _gateway = new BluefinGateway(logger, _bluefinPaymentSettings);
     }
 
     [Area(AreaNames.ADMIN)]
@@ -81,7 +80,12 @@ public class PaymentBluefinController : BasePaymentController
             ApiKeyId = bluefinPaymentSettings.ApiKeyId,
             ApiKeySecret = bluefinPaymentSettings.ApiKeySecret,
             AccountId = bluefinPaymentSettings.AccountId,
-            IFrameConfigId = bluefinPaymentSettings.IFrameConfigId
+            IFrameConfigId = bluefinPaymentSettings.IFrameConfigId,
+            ThreeDTransType = bluefinPaymentSettings.ThreeDTransType,
+            DeliveryTimeFrame = bluefinPaymentSettings.DeliveryTimeFrame,
+            ThreeDSecureChallengeIndicator = bluefinPaymentSettings.ThreeDSecureChallengeIndicator,
+            ReorderIndicator = bluefinPaymentSettings.ReorderIndicator,
+            ShippingIndicator = bluefinPaymentSettings.ShippingIndicator
         };
 
         // Load and display settings
@@ -103,7 +107,12 @@ public class PaymentBluefinController : BasePaymentController
             ApiKeyId = model.ApiKeyId,
             ApiKeySecret = model.ApiKeySecret,
             AccountId = model.AccountId,
-            IFrameConfigId = model.IFrameConfigId
+            IFrameConfigId = model.IFrameConfigId,
+            ThreeDTransType = model.ThreeDTransType,
+            DeliveryTimeFrame = model.DeliveryTimeFrame,
+            ThreeDSecureChallengeIndicator = model.ThreeDSecureChallengeIndicator,
+            ReorderIndicator = model.ReorderIndicator,
+            ShippingIndicator = model.ShippingIndicator
         };
 
         await _settingService.SaveSettingAsync(settings);

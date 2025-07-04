@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml;
+using System.Dynamic;
 
 using Newtonsoft.Json;
 
@@ -294,43 +295,55 @@ public class BluefinGateway : BluefinLogger
                     accountId + "/payment-iframe/" + _bluefinPaymentSettings.IFrameConfigId + "/instance/init";
 
 
-        var request = new
+        dynamic request = new ExpandoObject();
+
+        request.label = "my-instance-1"; // TODO: Compose based on the Nop Customer Info?
+        request.amount = customer.Amount;
+        request.currency = customer.Currency;
+        request.bfTokenReferences = bfTokenReferences; // new List<string>(), // NOTE: DISABLE FOR NOW bfTokenReferences,
+        request.initializeTransaction = true;
+        request.customer = new
         {
-            label = "my-instance-1", // TODO: Compose based on the Nop Customer Info?
-            amount = customer.Amount,
-            currency = customer.Currency,
-            bfTokenReferences = bfTokenReferences, // new List<string>(), // NOTE: DISABLE FOR NOW bfTokenReferences,
-            initializeTransaction = true,
-            customer = new
+            name = customer.BillingAddress.FirstName + " " + customer.BillingAddress.LastName,
+            email = customer.Email,
+            phone = customer.BillingAddress.PhoneNumber,
+            // NOTE: Prefilled inputs fields for the Checkout Component
+            billingAddress = new
             {
-                name = customer.BillingAddress.FirstName + " " + customer.BillingAddress.LastName,
-                email = customer.Email,
-                phone = customer.BillingAddress.PhoneNumber,
-                // NOTE: Prefilled inputs fields for the Checkout Component
-                billingAddress = new
-                {
-                    address1 = customer.BillingAddress.Address1,
-                    address2 = customer.BillingAddress.Address2,
-                    city = customer.BillingAddress.City,
-                    state = customer.BillingAddress.State,
-                    zip = customer.BillingAddress.Zip,
-                    country = customer.BillingAddress.Country,
-                    company = customer.BillingAddress.Company
-                }
-            },
-            shippingAddress = new
-            {
-                address1 = customer.ShippingAddress.Address1,
-                address2 = customer.ShippingAddress.Address2,
-                city = customer.ShippingAddress.City,
-                state = customer.ShippingAddress.State,
-                zip = customer.ShippingAddress.Zip,
-                country = customer.ShippingAddress.Country,
-                company = customer.ShippingAddress.Company,
-                recipient = customer.ShippingAddress.FirstName + " " + customer.ShippingAddress.LastName,
-                recipientPhone = customer.ShippingAddress.PhoneNumber
+                address1 = customer.BillingAddress.Address1,
+                address2 = customer.BillingAddress.Address2,
+                city = customer.BillingAddress.City,
+                state = customer.BillingAddress.State,
+                zip = customer.BillingAddress.Zip,
+                country = customer.BillingAddress.Country,
+                company = customer.BillingAddress.Company
             }
         };
+        request.shippingAddress = new
+        {
+            address1 = customer.ShippingAddress.Address1,
+            address2 = customer.ShippingAddress.Address2,
+            city = customer.ShippingAddress.City,
+            state = customer.ShippingAddress.State,
+            zip = customer.ShippingAddress.Zip,
+            country = customer.ShippingAddress.Country,
+            company = customer.ShippingAddress.Company,
+            recipient = customer.ShippingAddress.FirstName + " " + customer.ShippingAddress.LastName,
+            recipientPhone = customer.ShippingAddress.PhoneNumber
+        };
+
+        if (_bluefinPaymentSettings.Use3DS)
+        {
+            request.threeDSecureInitSettings = new
+            {
+                transactionType = _bluefinPaymentSettings.ThreeDTransType,
+                deliveryTimeFrame = _bluefinPaymentSettings.DeliveryTimeFrame,
+                threeDSecureChallengeIndicator = _bluefinPaymentSettings.ThreeDSecureChallengeIndicator,
+                reorderIndicator = _bluefinPaymentSettings.ReorderIndicator,
+                shippingIndicator = _bluefinPaymentSettings.ShippingIndicator
+            };
+        }
+
 
         HttpRequestMessage requestMessage = null;
 

@@ -106,9 +106,21 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.UseAuthorizeOnly"] = "Authorize only (capture manually in the admin)",
             ["Plugins.Payments.Bluefin.Fields.UseAuthorizeOnly.Hint"] = "After Order Confirm, Admin -> Order -> Select the order to capture and click on Capture",
             ["Plugins.Payments.Bluefin.Fields.Use3DS"] = "Use 3D Secure",
-            ["Plugins.Payments.Bluefin.Fields.Use3DS.Hint"] = "Use 3D Secure for the Checkout Component. This setting is based on the configuration of a payment method",
+            ["Plugins.Payments.Bluefin.Fields.Use3DS.Hint"] = "Use 3D Secure for the Checkout Component, Card Payment Method. If this setting is enabled, the threeDSecureInitSettings below must be configured according to your needs. Note that this setting is required if cardSettings.threeDSecure is defined as \"required\".",
             ["Plugins.Payments.Bluefin.Fields.EnableLogging"] = "Enable Logging",
-            ["Plugins.Payments.Bluefin.Fields.EnableLogging.Hint"] = "Enable Logging for debugging purposes. This setting is primarily used in development"
+            ["Plugins.Payments.Bluefin.Fields.EnableLogging.Hint"] = "Enable Logging for debugging purposes. This setting is primarily used in development",
+
+            ["Plugins.Payments.Bluefin.Fields.ThreeDTransType"] = "3DS Transaction Type",
+            ["Plugins.Payments.Bluefin.Fields.ThreeDTransType.Hint"] = "Each option provides context about the nature of the transaction, helping to ensure accurate processing and risk assessment.",
+            ["Plugins.Payments.Bluefin.Fields.DeliveryTimeFrame"] = "Delivery Time Frame",
+            ["Plugins.Payments.Bluefin.Fields.DeliveryTimeFrame.Hint"] = "As the setting name suggests, this is the time for the goods to be delivered. The descriptions are pretty much self-explanatory given the options.",
+            ["Plugins.Payments.Bluefin.Fields.ThreeDSecureChallengeIndicator"] = "3D Secure Challenge Indicator",
+            ["Plugins.Payments.Bluefin.Fields.ThreeDSecureChallengeIndicator.Hint"] = "Indicates whether a challenge is preferred, mandated, or requested for the transaction.",
+            ["Plugins.Payments.Bluefin.Fields.ReorderIndicator"] = "Reorder Indicator",
+            ["Plugins.Payments.Bluefin.Fields.ReorderIndicator.Hint"] = "This setting indicates whether the order is new or was ordered before.",
+            ["Plugins.Payments.Bluefin.Fields.ShippingIndicator"] = "Shipping Indicator",
+            ["Plugins.Payments.Bluefin.Fields.ShippingIndicator.Hint"] = "Specifies the type of Shipping",
+
         });
 
         await base.InstallAsync();
