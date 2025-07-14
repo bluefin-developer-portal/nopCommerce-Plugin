@@ -259,6 +259,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
 
             string err_message = JsonConvert.SerializeObject(transaction_res.Metadata);
+            // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
             processPaymentResult.AddError(err_message);
         }
 

@@ -484,7 +484,6 @@ public class BluefinGateway : BluefinLogger
             {
                 total = transaction.Total,
                 currency = transaction.Currency
-
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
