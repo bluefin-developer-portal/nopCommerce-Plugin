@@ -237,14 +237,14 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             await _genericAttributeService.SaveAttributeAsync<string>(
                 nop_customer,
                 "bfTokenReference",
-                (string)null, //NOTE: This was giving and error, so I had to use (string)null
+                (string)null, // NOTE: Cast to string is required for compilation time
                 nop_store.Id
             );
 
             await _genericAttributeService.SaveAttributeAsync<string>(
                 nop_customer,
                 "bfTransactionId",
-                (string)null, //NOTE: This was giving and error, so I had to use (string)null
+                (string)null, // NOTE: Cast to string is required for compilation time
                 nop_store.Id
             );
 
