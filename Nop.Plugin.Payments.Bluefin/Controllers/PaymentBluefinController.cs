@@ -18,12 +18,20 @@ using Nop.Services.Logging;
 using Nop.Services.Messages;
 using Nop.Services.Orders;
 using Nop.Services.Payments;
+using Nop.Services.Security;
 
 using Nop.Web.Framework;
 using Nop.Web.Framework.Controllers;
 
+using Nop.Web.Framework.Mvc;
+using Nop.Web.Framework.Mvc.Filters;
 
 
+// [HttpsRequirement]
+// [AutoValidateAntiforgeryToken]
+// [ValidateIpAddress]
+// [AuthorizeAdmin]
+// [ValidateVendor]
 public class PaymentBluefinController : BasePaymentController
 {
 
@@ -66,6 +74,7 @@ public class PaymentBluefinController : BasePaymentController
     }
 
     [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
     public async Task<IActionResult> Configure()
     {
         var storeScope = await _storeContext.GetActiveStoreScopeConfigurationAsync();
@@ -73,6 +82,7 @@ public class PaymentBluefinController : BasePaymentController
 
         var model = new ConfigurationModel
         {
+            ActiveStoreScopeConfiguration = storeScope,
             EnableLogging = bluefinPaymentSettings.EnableLogging,
             UseSandbox = bluefinPaymentSettings.UseSandbox,
             Use3DS = bluefinPaymentSettings.Use3DS,
@@ -88,34 +98,70 @@ public class PaymentBluefinController : BasePaymentController
             ShippingIndicator = bluefinPaymentSettings.ShippingIndicator
         };
 
+        await _gateway.LogInfo("DEBUG: storeScope " + storeScope.ToString(), "");
+
+        if (storeScope > 0)
+        {
+            model.ApiKeyId_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.ApiKeyId, storeScope);
+            model.EnableLogging_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.EnableLogging, storeScope);
+            model.UseSandbox_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.UseSandbox, storeScope);
+            model.Use3DS_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.Use3DS, storeScope);
+            model.UseAuthorizeOnly_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.UseAuthorizeOnly, storeScope);
+            model.ApiKeySecret_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.ApiKeySecret, storeScope);
+            model.AccountId_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.AccountId, storeScope);
+            model.IFrameConfigId_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.IFrameConfigId, storeScope);
+            model.ThreeDTransType_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.ThreeDTransType, storeScope);
+            model.DeliveryTimeFrame_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.DeliveryTimeFrame, storeScope);
+            model.ThreeDSecureChallengeIndicator_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.ThreeDSecureChallengeIndicator, storeScope);
+            model.ReorderIndicator_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.ReorderIndicator, storeScope);
+            model.ShippingIndicator_OverrideForStore = await _settingService.SettingExistsAsync(bluefinPaymentSettings, settings => settings.ShippingIndicator, storeScope);
+        }
+
         // Load and display settings
         return View("~/Plugins/Payments.Bluefin/Views/Configure.cshtml", model);
     }
 
     [HttpPost]
-    // [AuthorizeAdmin]
     [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
     public async Task<IActionResult> Configure(ConfigurationModel model)
     {
 
-        var settings = new BluefinPaymentSettings
-        {
-            EnableLogging = model.EnableLogging,
-            UseSandbox = model.UseSandbox,
-            Use3DS = model.Use3DS,
-            UseAuthorizeOnly = model.UseAuthorizeOnly,
-            ApiKeyId = model.ApiKeyId,
-            ApiKeySecret = model.ApiKeySecret,
-            AccountId = model.AccountId,
-            IFrameConfigId = model.IFrameConfigId,
-            ThreeDTransType = model.ThreeDTransType,
-            DeliveryTimeFrame = model.DeliveryTimeFrame,
-            ThreeDSecureChallengeIndicator = model.ThreeDSecureChallengeIndicator,
-            ReorderIndicator = model.ReorderIndicator,
-            ShippingIndicator = model.ShippingIndicator
-        };
+        var storeScope = await _storeContext.GetActiveStoreScopeConfigurationAsync();
 
-        await _settingService.SaveSettingAsync(settings);
+        var bluefinPaymentSettings = await _settingService.LoadSettingAsync<BluefinPaymentSettings>(storeScope);
+
+
+        bluefinPaymentSettings.EnableLogging = model.EnableLogging;
+        bluefinPaymentSettings.UseSandbox = model.UseSandbox;
+        bluefinPaymentSettings.Use3DS = model.Use3DS;
+        bluefinPaymentSettings.UseAuthorizeOnly = model.UseAuthorizeOnly;
+        bluefinPaymentSettings.ApiKeyId = model.ApiKeyId;
+        bluefinPaymentSettings.ApiKeySecret = model.ApiKeySecret;
+        bluefinPaymentSettings.AccountId = model.AccountId;
+        bluefinPaymentSettings.IFrameConfigId = model.IFrameConfigId;
+        bluefinPaymentSettings.ThreeDTransType = model.ThreeDTransType;
+        bluefinPaymentSettings.DeliveryTimeFrame = model.DeliveryTimeFrame;
+        bluefinPaymentSettings.ThreeDSecureChallengeIndicator = model.ThreeDSecureChallengeIndicator;
+        bluefinPaymentSettings.ReorderIndicator = model.ReorderIndicator;
+        bluefinPaymentSettings.ShippingIndicator = model.ShippingIndicator;
+
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.ApiKeyId, model.ApiKeyId_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.EnableLogging, model.EnableLogging_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.UseSandbox, model.UseSandbox_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.Use3DS, model.Use3DS_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.UseAuthorizeOnly, model.UseAuthorizeOnly_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.ApiKeySecret, model.ApiKeySecret_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.AccountId, model.AccountId_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.IFrameConfigId, model.IFrameConfigId_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.ThreeDTransType, model.ThreeDTransType_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.DeliveryTimeFrame, model.DeliveryTimeFrame_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.ThreeDSecureChallengeIndicator, model.ThreeDSecureChallengeIndicator_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.ReorderIndicator, model.ReorderIndicator_OverrideForStore, storeScope, false);
+        await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.ShippingIndicator, model.ShippingIndicator_OverrideForStore, storeScope, false);
+
+        // await _settingService.ClearCacheAsync();
+        await _settingService.SaveSettingAsync(bluefinPaymentSettings, storeScope);
 
         _notificationService.SuccessNotification(await _localizationService.GetResourceAsync("Admin.Plugins.Saved"));
 
@@ -167,5 +213,5 @@ public class PaymentBluefinController : BasePaymentController
 
         return Json(new { ok = true });
     }
-    
+
 }

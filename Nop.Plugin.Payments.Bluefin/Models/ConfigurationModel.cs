@@ -131,47 +131,60 @@ public record ConfigurationModel : BaseNopModel
 
     }
 
+    public int ActiveStoreScopeConfiguration { get; set; }
+
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.UseSandbox")]
     public bool UseSandbox { get; set; }
     public bool UseSandbox_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ApiKeyId")]
     public string ApiKeyId { get; set; }
-    public string ApiKeyId_OverrideForStore { get; set; } // TODO: Override other settings per store
+    public bool ApiKeyId_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ApiKeySecret")]
     [DataType(DataType.Password)]
     public string ApiKeySecret { get; set; }
+    public bool ApiKeySecret_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.AccountId")]
     public string AccountId { get; set; }
+    public bool AccountId_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.IFrameConfigId")]
     public string IFrameConfigId { get; set; }
+    public bool IFrameConfigId_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.Use3DS")]
     public bool Use3DS { get; set; }
+    public bool Use3DS_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.UseAuthorizeOnly")]
     public bool UseAuthorizeOnly { get; set; }
+    public bool UseAuthorizeOnly_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableLogging")]
     public bool EnableLogging { get; set; }
+    public bool EnableLogging_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ThreeDTransType")]
     public string ThreeDTransType { get; set; }
+    public bool ThreeDTransType_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.DeliveryTimeFrame")]
     public string DeliveryTimeFrame { get; set; }
+    public bool DeliveryTimeFrame_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ThreeDSecureChallengeIndicator")]
     public string ThreeDSecureChallengeIndicator { get; set; }
+    public bool ThreeDSecureChallengeIndicator_OverrideForStore { get; set; }
     
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ReorderIndicator")]
     public string ReorderIndicator { get; set; }
+    public bool ReorderIndicator_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ShippingIndicator")]
     public string ShippingIndicator { get; set; }
+    public bool ShippingIndicator_OverrideForStore { get; set; }
 
 
     public IList<SelectListItem> ThreeDSecureTransactionTypes { get; set; }
