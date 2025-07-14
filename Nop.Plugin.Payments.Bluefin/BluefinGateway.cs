@@ -341,10 +341,6 @@ public class BluefinGateway : BluefinLogger
             recipientPhone = customer.ShippingAddress.PhoneNumber
         };
 
-        request.cardSettings = new
-        {
-            threeDSecure = "omit",
-        };
 
         if (_bluefinPaymentSettings.Use3DS)
         {
