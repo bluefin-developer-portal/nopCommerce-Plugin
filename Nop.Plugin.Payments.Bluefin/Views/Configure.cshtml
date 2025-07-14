@@ -38,7 +38,7 @@
                         <span asp-validation-for="ApiKeySecret" class="text-danger"></span>
                     </div>
                 </div>
-
+                
 
                 <div class="form-group row">
                     <div class="col-sm-3">
@@ -107,6 +107,83 @@
                     </div>
                 </div>
 
+                <h3 class="form-group row">Iframe Settings</h3>
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="IframeResponsive_OverrideForStore" asp-input="IframeResponsive" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="IframeResponsive" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="IframeResponsive" />
+                        <span asp-validation-for="IframeResponsive" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="IframeWidth_OverrideForStore" asp-input="IframeWidth" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="IframeWidth" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="IframeWidth" />
+                        <span asp-validation-for="IframeWidth" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="IframeHeight_OverrideForStore" asp-input="IframeHeight" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="IframeHeight" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="IframeHeight" />
+                        <span asp-validation-for="IframeHeight" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <h3 class="form-group row">Payment Methods</h3>
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="EnableCard_OverrideForStore" asp-input="EnableCard" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="EnableCard" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="EnableCard" />
+                        <span asp-validation-for="EnableCard" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="EnableACH_OverrideForStore" asp-input="EnableACH" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="EnableACH" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="EnableACH" />
+                        <span asp-validation-for="EnableACH" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="EnableGooglePay_OverrideForStore" asp-input="EnableGooglePay" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="EnableGooglePay" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="EnableGooglePay" />
+                        <span asp-validation-for="EnableGooglePay" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="EnableClickToPay_OverrideForStore" asp-input="EnableClickToPay" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="EnableClickToPay" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="EnableClickToPay" />
+                        <span asp-validation-for="EnableClickToPay" class="text-danger"></span>
+                    </div>
+                </div>
 
                 <h3 class="form-group row">threeDSecureInitSettings</h3>
 
@@ -172,3 +249,84 @@
         </div>
     </div>
 </form>
+
+<script>
+    $(document).ready(function() {
+        function toggleIframeFields() {
+            var isResponsive = $('#IframeResponsive').is(':checked');
+            $('#IframeWidth, #IframeHeight').prop('disabled', isResponsive);
+            
+            if (isResponsive) {
+                $('#IframeWidth, #IframeHeight').addClass('disabled');
+            } else {
+                $('#IframeWidth, #IframeHeight').removeClass('disabled');
+            }
+        }
+        
+        // Initial state
+        toggleIframeFields();
+        
+        // Listen for changes
+        $('#IframeResponsive').change(function() {
+            toggleIframeFields();
+        });
+        
+        // Form validation
+        $('form').submit(function(e) {
+            var isResponsive = $('#IframeResponsive').is(':checked');
+            
+            if (!isResponsive) {
+                var width = $('#IframeWidth').val().trim();
+                var height = $('#IframeHeight').val().trim();
+                
+                if (!width) {
+                    alert('Please enter a width for the iframe when responsive mode is disabled.');
+                    $('#IframeWidth').focus();
+                    e.preventDefault();
+                    return false;
+                }
+                
+                if (!height) {
+                    alert('Please enter a height for the iframe when responsive mode is disabled.');
+                    $('#IframeHeight').focus();
+                    e.preventDefault();
+                    return false;
+                }
+            }
+            
+            // Validate that at least one payment method is selected
+            var checked = $('#EnableCard').is(':checked') ||
+                          $('#EnableACH').is(':checked') ||
+                          $('#EnableGooglePay').is(':checked') ||
+                          $('#EnableClickToPay').is(':checked');
+            if (!checked) {
+                alert('Please select at least one payment method.');
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+</script>
+
+<style>
+    .checkbox-list {
+        margin-top: 5px;
+    }
+    
+    .checkbox-item {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+        margin-right: 8px;
+        margin-top: 0;
+    }
+    
+    .checkbox-item label {
+        margin-bottom: 0;
+        font-weight: normal;
+        cursor: pointer;
+    }
+</style>
