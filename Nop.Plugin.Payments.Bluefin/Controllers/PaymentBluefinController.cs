@@ -113,7 +113,7 @@ public class PaymentBluefinController : BasePaymentController
             EnableClickToPay = bluefinPaymentSettings.EnableClickToPay
         };
 
-        await _gateway.LogInfo("DEBUG: storeScope " + storeScope.ToString(), "");
+        await _gateway.LogDebug("DEBUG: storeScope " + storeScope.ToString(), "");
 
         if (storeScope > 0)
         {

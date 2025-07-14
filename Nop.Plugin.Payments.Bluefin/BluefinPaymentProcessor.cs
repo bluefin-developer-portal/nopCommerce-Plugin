@@ -26,6 +26,7 @@ using Nop.Services.Localization;
 using Nop.Services.Logging;
 using Nop.Services.Messages;
 
+
 using Nop.Plugin.Payments.Bluefin.Components;
 using Nop.Plugin.Payments.Bluefin.Domain;
 using Nop.Plugin.Payments.Bluefin.Services;
@@ -191,7 +192,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         await _gateway.LogDebug(
             "ProcessPaymentRequest orderGuid: " + orderGuid,
             "Transaction Metadata: "
-            );
+        );
+
 
         string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
         string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);

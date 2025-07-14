@@ -11,6 +11,7 @@
 @inject IStoreContext storeContext
 @inject IShoppingCartService shoppingCartService
 @inject IShoppingCartModelFactory shoppingCartModelFactory
+@inject IGenericAttributeService genericAttributeService
 @inject INopHtmlHelper NopHtml
 @inject BluefinPaymentSettings bluefinPaymentSettings
 
@@ -41,3 +42,5 @@
 @using Nop.Services.Orders
 @using Nop.Services.Common
 @using Nop.Web.Factories
+@using Nop.Core.Domain.Shipping
+@using Nop.Core.Domain.Customers

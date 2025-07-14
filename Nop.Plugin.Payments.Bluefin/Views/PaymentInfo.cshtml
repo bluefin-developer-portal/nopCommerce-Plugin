@@ -105,6 +105,9 @@
 
                     var shopping_model = await shoppingCartModelFactory.PrepareOrderTotalsModelAsync(cart, false);
 
+                    var pickupPoint = await genericAttributeService.GetAttributeAsync<PickupPoint>(customer,
+                            NopCustomerDefaults.SelectedPickupPointAttribute, store.Id);
+
                     var currency = await workContext.GetWorkingCurrencyAsync();
                     var devServer = bluefinPaymentSettings.UseSandbox ? 
                         BluefinPaymentDefaults.CheckoutComponentCERT : BluefinPaymentDefaults.CheckoutComponentPROD;
@@ -194,6 +197,15 @@
 
             // console.debug(customer)
 
+            // console.log('@shopping_model')
+
+            @if(pickupPoint != null) {
+                <text>
+                console.log('@pickupPoint.Address')
+                </text>
+            }
+
+            
 
             const callbacks = {
                 iframeLoaded: function () {
