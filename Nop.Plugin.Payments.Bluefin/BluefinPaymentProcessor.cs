@@ -120,7 +120,16 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.ReorderIndicator.Hint"] = "This setting indicates whether the order is new or was ordered before.",
             ["Plugins.Payments.Bluefin.Fields.ShippingIndicator"] = "Shipping Indicator",
             ["Plugins.Payments.Bluefin.Fields.ShippingIndicator.Hint"] = "Specifies the type of Shipping",
-
+            ["Plugins.Payments.Bluefin.Fields.IframeResponsive"] = "Responsive iframe",
+            ["Plugins.Payments.Bluefin.Fields.IframeResponsive.Hint"] = "Enable responsive iframe that automatically adjusts height to hide scrollbars",
+            ["Plugins.Payments.Bluefin.Fields.IframeWidth"] = "Iframe width",
+            ["Plugins.Payments.Bluefin.Fields.IframeWidth.Hint"] = "Width of the payment iframe (e.g., 100%, 500px, 50vw)",
+            ["Plugins.Payments.Bluefin.Fields.IframeHeight"] = "Iframe height",
+            ["Plugins.Payments.Bluefin.Fields.IframeHeight.Hint"] = "Height of the payment iframe (e.g., 600px, 60vh, 400px)",
+            ["Plugins.Payments.Bluefin.Fields.EnableCard"] = "Credit/Debit Card",
+            ["Plugins.Payments.Bluefin.Fields.EnableACH"] = "ACH (Bank Transfer)",
+            ["Plugins.Payments.Bluefin.Fields.EnableGooglePay"] = "Google Pay",
+            ["Plugins.Payments.Bluefin.Fields.EnableClickToPay"] = "Click to Pay",
         });
 
         await base.InstallAsync();
@@ -228,14 +237,14 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             await _genericAttributeService.SaveAttributeAsync<string>(
                 nop_customer,
                 "bfTokenReference",
-                null,
+                (string)null, //NOTE: This was giving and error, so I had to use (string)null
                 nop_store.Id
             );
 
             await _genericAttributeService.SaveAttributeAsync<string>(
                 nop_customer,
                 "bfTransactionId",
-                null,
+                (string)null, //NOTE: This was giving and error, so I had to use (string)null
                 nop_store.Id
             );
 
