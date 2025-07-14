@@ -305,7 +305,7 @@ public class BluefinGateway : BluefinLogger
         request.initializeTransaction = true;
 
         // Build allowedPaymentMethods from individual booleans
-        var allowedPaymentMethods = bfTokenReferences, // new List<string>(), // NOTE: DISABLE FOR NOW bfTokenReferences,
+        var allowedPaymentMethods = new List<string>(); // NOTE: DISABLE FOR NOW bfTokenReferences,
         if (_bluefinPaymentSettings.EnableCard) allowedPaymentMethods.Add("CARD");
         if (_bluefinPaymentSettings.EnableACH) allowedPaymentMethods.Add("ACH");
         if (_bluefinPaymentSettings.EnableGooglePay) allowedPaymentMethods.Add("GOOGLE_PAY");
