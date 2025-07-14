@@ -75,6 +75,14 @@ public class PaymentBluefinController : BasePaymentController
 
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
+    public async Task<IActionResult> MyIndex()
+    {
+        // var data = await _dbContext.BluefinEntries.ToListAsync();
+        return View("~/Plugins/Payments.Bluefin/Views/MyIndex.cshtml"); // , data);
+    }
+
+    [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
     public async Task<IActionResult> Configure()
     {
         var storeScope = await _storeContext.GetActiveStoreScopeConfigurationAsync();
