@@ -294,20 +294,29 @@ public class BluefinGateway : BluefinLogger
         string URI = "/api/v4/accounts/" +
                     accountId + "/payment-iframe/" + _bluefinPaymentSettings.IFrameConfigId + "/instance/init";
 
-
+        // NOTE: dynamic object to build flexible JSON request with conditional properties,
+        // With a strongly-typed object, I couldn't add properties conditionally at runtime using Visual Studio.
         dynamic request = new ExpandoObject();
 
         request.label = "my-instance-1"; // TODO: Compose based on the Nop Customer Info?
         request.amount = customer.Amount;
         request.currency = customer.Currency;
-        request.bfTokenReferences = bfTokenReferences; // new List<string>(), // NOTE: DISABLE FOR NOW bfTokenReferences,
+        request.bfTokenReferences = bfTokenReferences;
         request.initializeTransaction = true;
+
+        // Build allowedPaymentMethods from individual booleans
+        var allowedPaymentMethods = new List<string>(); // NOTE: DISABLE FOR NOW bfTokenReferences,
+        if (_bluefinPaymentSettings.EnableCard) allowedPaymentMethods.Add("CARD");
+        if (_bluefinPaymentSettings.EnableACH) allowedPaymentMethods.Add("ACH");
+        if (_bluefinPaymentSettings.EnableGooglePay) allowedPaymentMethods.Add("GOOGLE_PAY");
+        if (_bluefinPaymentSettings.EnableClickToPay) allowedPaymentMethods.Add("CLICK_TO_PAY");
+        request.allowedPaymentMethods = allowedPaymentMethods;
+
         request.customer = new
         {
             name = customer.BillingAddress.FirstName + " " + customer.BillingAddress.LastName,
             email = customer.Email,
             phone = customer.BillingAddress.PhoneNumber,
-            // NOTE: Prefilled inputs fields for the Checkout Component
             billingAddress = new
             {
                 address1 = customer.BillingAddress.Address1,
@@ -331,6 +340,7 @@ public class BluefinGateway : BluefinLogger
             recipient = customer.ShippingAddress.FirstName + " " + customer.ShippingAddress.LastName,
             recipientPhone = customer.ShippingAddress.PhoneNumber
         };
+
 
         if (_bluefinPaymentSettings.Use3DS)
         {

@@ -128,7 +128,7 @@ public record ConfigurationModel : BaseNopModel
                 Value = "OTHER"
             }
         };
-
+        
     }
 
     public int ActiveStoreScopeConfiguration { get; set; }
@@ -186,12 +186,40 @@ public record ConfigurationModel : BaseNopModel
     public string ShippingIndicator { get; set; }
     public bool ShippingIndicator_OverrideForStore { get; set; }
 
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.IframeResponsive")]
+    public bool IframeResponsive { get; set; }
+    public bool IframeResponsive_OverrideForStore { get; set; }
+
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.IframeWidth")]
+    public string IframeWidth { get; set; }
+    public bool IframeWidth_OverrideForStore { get; set; }
+
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.IframeHeight")]
+    public string IframeHeight { get; set; }
+    public bool IframeHeight_OverrideForStore { get; set; }
+
+    // Payment method checkboxes
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableCard")] 
+    public bool EnableCard { get; set; } = true;
+    public bool EnableCard_OverrideForStore { get; set; }
+
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableACH")] 
+    public bool EnableACH { get; set; } = false;
+    public bool EnableACH_OverrideForStore { get; set; }
+
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableGooglePay")] 
+    public bool EnableGooglePay { get; set; } = false;
+    public bool EnableGooglePay_OverrideForStore { get; set; }
+
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableClickToPay")] 
+    public bool EnableClickToPay { get; set; } = false;
+    public bool EnableClickToPay_OverrideForStore { get; set; }
 
     public IList<SelectListItem> ThreeDSecureTransactionTypes { get; set; }
     public IList<SelectListItem> DeliveryTimeFrames { get; set; }
     public IList<SelectListItem> ThreeDSecureChallengeIndicators { get; set; }
     public IList<SelectListItem> ReorderIndicators { get; set; }
-
+  
     public IList<SelectListItem> ShippingIndicators { get; set; }
 
 

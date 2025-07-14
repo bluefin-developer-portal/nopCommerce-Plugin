@@ -23,6 +23,17 @@ public class BluefinPaymentSettings : ISettings
     public bool EnableLogging { get; set; }
     #endregion
 
+    #region Iframe Settings
+    public bool IframeResponsive { get; set; } = false;
+    public string IframeWidth { get; set; } = "100%";
+    public string IframeHeight { get; set; } = "600px";
+
+    public bool EnableCard { get; set; } = true;
+    public bool EnableACH { get; set; } = false;
+    public bool EnableGooglePay { get; set; } = false;
+    public bool EnableClickToPay { get; set; } = false;
+    #endregion
+
     #region threeDSecure
     public bool Use3DS { get; set; }
     public string ThreeDTransType { get; set; }
