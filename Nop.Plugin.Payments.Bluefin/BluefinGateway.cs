@@ -312,35 +312,112 @@ public class BluefinGateway : BluefinLogger
         if (_bluefinPaymentSettings.EnableClickToPay) allowedPaymentMethods.Add("CLICK_TO_PAY");
         request.allowedPaymentMethods = allowedPaymentMethods;
 
-        request.customer = new
-        {
-            name = customer.BillingAddress.FirstName + " " + customer.BillingAddress.LastName,
-            email = customer.Email,
-            phone = customer.BillingAddress.PhoneNumber,
-            billingAddress = new
-            {
-                address1 = customer.BillingAddress.Address1,
-                address2 = customer.BillingAddress.Address2,
-                city = customer.BillingAddress.City,
-                state = customer.BillingAddress.State,
-                zip = customer.BillingAddress.Zip,
-                country = customer.BillingAddress.Country,
-                company = customer.BillingAddress.Company
-            }
-        };
-        request.shippingAddress = new
-        {
-            address1 = customer.ShippingAddress.Address1,
-            address2 = customer.ShippingAddress.Address2,
-            city = customer.ShippingAddress.City,
-            state = customer.ShippingAddress.State,
-            zip = customer.ShippingAddress.Zip,
-            country = customer.ShippingAddress.Country,
-            company = customer.ShippingAddress.Company,
-            recipient = customer.ShippingAddress.FirstName + " " + customer.ShippingAddress.LastName,
-            recipientPhone = customer.ShippingAddress.PhoneNumber
-        };
+        request.customer = new ExpandoObject();
 
+        // NOTE: Billing Address
+        request.customer.billingAddress = new ExpandoObject();
+
+        if (customer.BillingAddress.FirstName != null && customer.BillingAddress.LastName != null)
+        {
+            request.customer.name = customer.BillingAddress.FirstName + " " + customer.BillingAddress.LastName;
+        }
+        else if (customer.BillingAddress.FirstName != null)
+        {
+            request.customer.name = customer.BillingAddress.FirstName;
+        }
+
+        if (customer.Email != null)
+        {
+            request.customer.email = customer.Email;
+        }
+
+        if (customer.BillingAddress.PhoneNumber != null)
+        {
+            request.customer.phone = customer.BillingAddress.PhoneNumber;
+        }
+
+        if (customer.BillingAddress.Address1 != null)
+        {
+            request.customer.billingAddress.address1 = customer.BillingAddress.Address1;
+        }
+
+        if (customer.BillingAddress.Address2 != null)
+        {
+            request.customer.billingAddress.address2 = customer.BillingAddress.Address2;
+        }
+
+        if (customer.BillingAddress.City != null) {
+            request.customer.billingAddress.city = customer.BillingAddress.City;
+        }
+
+        if (customer.BillingAddress.State != null) {
+            request.customer.billingAddress.state = customer.BillingAddress.State;
+        }
+
+        if (customer.BillingAddress.Zip != null)
+        {
+            request.customer.billingAddress.zip = customer.BillingAddress.Zip;
+        }
+        if (customer.BillingAddress.Country != null)
+        {
+            request.customer.billingAddress.country = customer.BillingAddress.Country;
+        }
+
+        if (customer.BillingAddress.Company != null) {
+            request.customer.billingAddress.company = customer.BillingAddress.Company;
+        }
+
+        // NOTE: Shipping Address including Pickup
+        request.shippingAddress = new ExpandoObject();
+
+        if (customer.ShippingAddress.FirstName != null && customer.ShippingAddress.LastName != null)
+        {
+            request.shippingAddress.recipient = customer.ShippingAddress.FirstName + " " + customer.ShippingAddress.LastName;
+        }
+        else if (customer.ShippingAddress.FirstName != null)
+        {
+            request.shippingAddress.recipient = customer.ShippingAddress.FirstName;
+        }
+
+        if (customer.ShippingAddress.Address1 != null)
+        {
+            request.shippingAddress.address1 = customer.ShippingAddress.Address1;
+        }
+
+        if (customer.ShippingAddress.Address2 != null)
+        {
+            request.shippingAddress.address2 = customer.ShippingAddress.Address2;
+        }
+
+        if (customer.ShippingAddress.City != null)
+        {
+            request.shippingAddress.city = customer.ShippingAddress.City;
+        }
+
+        if (customer.ShippingAddress.State != null)
+        {
+            request.shippingAddress.state = customer.ShippingAddress.State;
+        }
+
+        if (customer.ShippingAddress.Zip != null)
+        {
+            request.shippingAddress.zip = customer.ShippingAddress.Zip;
+        }
+
+        if (customer.ShippingAddress.Country != null)
+        {
+            request.shippingAddress.country = customer.ShippingAddress.Country;
+        }
+
+        if (customer.ShippingAddress.Company != null)
+        {
+            request.shippingAddress.company = customer.ShippingAddress.Company;
+        }
+
+        if (customer.ShippingAddress.PhoneNumber != null)
+        {
+            request.shippingAddress.recipientPhone = customer.ShippingAddress.PhoneNumber;
+        }
 
         if (_bluefinPaymentSettings.Use3DS)
         {

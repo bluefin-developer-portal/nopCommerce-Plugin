@@ -78,7 +78,7 @@ public class PaymentBluefinController : BasePaymentController
     public async Task<IActionResult> MyIndex()
     {
         // var data = await _dbContext.BluefinEntries.ToListAsync();
-        return View("~/Plugins/Payments.Bluefin/Views/MyIndex.cshtml"); // , data);
+        return View("~/Plugins/Payments.Bluefin/Views/TraceLogs.cshtml"); // , data);
     }
 
     [Area(AreaNames.ADMIN)]

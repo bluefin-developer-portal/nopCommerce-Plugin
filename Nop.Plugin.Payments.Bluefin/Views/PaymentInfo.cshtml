@@ -4,13 +4,8 @@
 @{
     Layout = "";
     NopHtml.AddScriptParts(ResourceLocation.Head, BluefinPaymentDefaults.ScriptPath, excludeFromBundle: true);
-}
-
-<style>
+    /*
     #bluefin-iframe-container {
-        position: relative;
-        width: 100%;
-        min-height: 400px;
         @if (Model.IframeResponsive)
         {
             <text>
@@ -18,23 +13,36 @@
             </text>
         }
     }
+    */
+}
+
+<style>
+    #bluefin-iframe-container {
+        width: 100%;
+        min-height: 400px;
+    }
     
     #bluefin-iframe-container iframe {
         border: none;
-        width: 100%;
-        @if (!Model.IframeResponsive)
-        {
-            <text>
-            height: @(string.IsNullOrEmpty(Model.IframeHeight) ? "600px" : Model.IframeHeight);
-            </text>
-        }
-        @if (Model.IframeResponsive)
-        {
-            <text>
-            height: 700px;
-            </text>
-        }
     }
+
+    @if (Model.IframeResponsive) {
+        <text>
+            @@media screen and (width >= 1024px) {
+                #bluefin-iframe-container iframe {
+                    height: 700px;
+                }
+            }
+
+            @@media screen and (max-width: 1024px) {
+                #bluefin-iframe-container iframe {
+                    height: 600px;
+                }
+            }
+        </text>
+    }
+
+
 </style>
 
 <input asp-for="IFrameCompleted" id="IFrameCompleted" type="hidden" />
@@ -106,7 +114,7 @@
                     var shopping_model = await shoppingCartModelFactory.PrepareOrderTotalsModelAsync(cart, false);
 
                     var pickupPoint = await genericAttributeService.GetAttributeAsync<PickupPoint>(customer,
-                            NopCustomerDefaults.SelectedPickupPointAttribute, store.Id);
+                        NopCustomerDefaults.SelectedPickupPointAttribute, store.Id);
 
                     var currency = await workContext.GetWorkingCurrencyAsync();
                     var devServer = bluefinPaymentSettings.UseSandbox ? 
@@ -115,51 +123,12 @@
 
             const iframeConfig = {
                 parentDivId: 'bluefin-iframe-container',
-                width: '@(string.IsNullOrEmpty(Model.IframeWidth) ? "100%" : Model.IframeWidth)',
-                height: '@(Model.IframeResponsive ? "700px" : (string.IsNullOrEmpty(Model.IframeHeight) ? "600px" : Model.IframeHeight))'
+                width: '@(string.IsNullOrEmpty(Model.IframeWidth) ? "100%" : Model.IframeWidth)'
             }
 
-            @if (Model.IframeResponsive)
-            {
+            @if(!Model.IframeResponsive) {
                 <text>
-                // Responsive iframe functionality for cross-origin iframe
-                function setupResponsiveIframe() {
-                    const iframe = document.querySelector('#bluefin-iframe-container iframe');
-                    if (iframe) {
-                        // Listen for postMessage from iframe for height adjustments
-                        window.addEventListener('message', function(event) {
-                            // Verify the origin for security
-                            if (event.origin !== '@devServer') {
-                                return;
-                            }
-                            
-                            // Handle height adjustment messages from iframe
-                            if (event.data && event.data.type === 'resize') {
-                                const newHeight = event.data.height;
-                                if (newHeight && typeof newHeight === 'number') {
-                                    iframe.style.height = (newHeight + 20) + 'px'; // Add padding
-                                }
-                            }
-                        });
-                        
-                        // Listen for window resize events to adjust iframe
-                        window.addEventListener('resize', function() {
-                            // Use a reasonable default height for responsive mode
-                            const windowHeight = window.innerHeight;
-                            const containerTop = iframe.getBoundingClientRect().top;
-                            const availableHeight = windowHeight - containerTop - 100; // Leave some margin
-                            iframe.style.height = Math.max(400, availableHeight) + 'px';
-                        });
-                        
-                        // Set initial responsive height
-                        setTimeout(function() {
-                            const windowHeight = window.innerHeight;
-                            const containerTop = iframe.getBoundingClientRect().top;
-                            const availableHeight = windowHeight - containerTop - 100;
-                            iframe.style.height = Math.max(400, availableHeight) + 'px';
-                        }, 100);
-                    }
-                }
+                    iframeConfig.height = '@(string.IsNullOrEmpty(Model.IframeHeight) ? "600px" : Model.IframeHeight)'
                 </text>
             }
 
@@ -197,11 +166,23 @@
 
             // console.debug(customer)
 
-            // console.log('@shopping_model')
-
+            // Handle Pickup Address Information if selected by the user
             @if(pickupPoint != null) {
                 <text>
-                console.log('@pickupPoint.Address')
+                    let pickup_info = {
+                        ShippingAddress: {
+                            FirstName: '@pickupPoint?.Name',
+                            Address1: '@pickupPoint.Address',
+                            City: '@pickupPoint?.City',
+                            State: '@pickupPoint?.StateAbbreviation',
+                            Zip: '@pickupPoint?.ZipPostalCode',
+                            Country: '@pickupPoint?.CountryCode' // NOTE: two-letter ISO country code
+                        }
+                    }
+
+                    // Overwrite
+                    customer.ShippingAddress = pickup_info.ShippingAddress;
+
                 </text>
             }
 
@@ -213,14 +194,6 @@
                     let save_button = document.querySelector('button[onclick="PaymentInfo.save()"]')
                     save_button && save_button.remove()
                     console.debug('Iframe loaded')
-                    // NOTE: This is a hack to make the iframe responsive. It's not a good solution, but it's the only way I can think of to make it work.
-                    @if (Model.IframeResponsive)
-                    {
-                        <text>
-                        // Setup responsive iframe after it's loaded
-                        setTimeout(setupResponsiveIframe, 100);
-                        </text>
-                    }
                 },
                 checkoutComplete: async function (data) {
                     const bfTokenReference = data.bfTokenReference
@@ -288,7 +261,7 @@
             }
 
             // "Cache" the bearerToken in the current page so we keep keep the state of the checkout component after ValidatePaymentFormAsync
-            // This also gets reused if the customer clicks on the "Back" button. However, there is one edge case where if we change the customer-related information by going back, the checkout component won't be recreated in that page session.
+            // This also gets reused if the customer clicks on the "Back" button. However, there is one edge case where if we change the customer-related information by going back, the checkout component won't be recreated in the current page session.
             if (!window.bearerToken) {
                 $.ajax({
                     async: true,

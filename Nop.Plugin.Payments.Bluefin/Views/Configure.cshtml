@@ -273,11 +273,11 @@
         
         // Form validation
         $('form').submit(function(e) {
-            var isResponsive = $('#IframeResponsive').is(':checked');
+            let isResponsive = $('#IframeResponsive').is(':checked');
             
             if (!isResponsive) {
-                var width = $('#IframeWidth').val().trim();
-                var height = $('#IframeHeight').val().trim();
+                let width = $('#IframeWidth').val().trim();
+                let height = $('#IframeHeight').val().trim();
                 
                 if (!width) {
                     alert('Please enter a width for the iframe when responsive mode is disabled.');
@@ -295,7 +295,7 @@
             }
             
             // Validate that at least one payment method is selected
-            var checked = $('#EnableCard').is(':checked') ||
+            let checked = $('#EnableCard').is(':checked') ||
                           $('#EnableACH').is(':checked') ||
                           $('#EnableGooglePay').is(':checked') ||
                           $('#EnableClickToPay').is(':checked');
