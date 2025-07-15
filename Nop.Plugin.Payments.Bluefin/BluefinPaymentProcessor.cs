@@ -121,16 +121,20 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.ReorderIndicator.Hint"] = "This setting indicates whether the order is new or was ordered before.",
             ["Plugins.Payments.Bluefin.Fields.ShippingIndicator"] = "Shipping Indicator",
             ["Plugins.Payments.Bluefin.Fields.ShippingIndicator.Hint"] = "Specifies the type of Shipping",
+
             ["Plugins.Payments.Bluefin.Fields.IframeResponsive"] = "Responsive iframe",
             ["Plugins.Payments.Bluefin.Fields.IframeResponsive.Hint"] = "Enable responsive iframe that automatically adjusts height to hide scrollbars",
-            ["Plugins.Payments.Bluefin.Fields.IframeWidth"] = "Iframe width",
+            ["Plugins.Payments.Bluefin.Fields.IframeWidth"] = "Iframe Width",
             ["Plugins.Payments.Bluefin.Fields.IframeWidth.Hint"] = "Width of the payment iframe (e.g., 100%, 500px, 50vw)",
-            ["Plugins.Payments.Bluefin.Fields.IframeHeight"] = "Iframe height",
+            ["Plugins.Payments.Bluefin.Fields.IframeWidth.Required"] = "Iframe Width is required",
+            ["Plugins.Payments.Bluefin.Fields.IframeHeight"] = "Iframe Height",
             ["Plugins.Payments.Bluefin.Fields.IframeHeight.Hint"] = "Height of the payment iframe (e.g., 600px, 60vh, 400px)",
+            ["Plugins.Payments.Bluefin.Fields.IframeHeight.Required"] = "Iframe Height is required",
             ["Plugins.Payments.Bluefin.Fields.EnableCard"] = "Credit/Debit Card",
             ["Plugins.Payments.Bluefin.Fields.EnableACH"] = "ACH (Bank Transfer)",
             ["Plugins.Payments.Bluefin.Fields.EnableGooglePay"] = "Google Pay",
             ["Plugins.Payments.Bluefin.Fields.EnableClickToPay"] = "Click to Pay",
+            ["Plugins.Payments.Bluefin.Fields.PaymentMethod.Required"] = "At least one payment method must be selected."
         });
 
         await base.InstallAsync();

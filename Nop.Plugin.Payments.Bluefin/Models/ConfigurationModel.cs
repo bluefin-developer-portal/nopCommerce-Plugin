@@ -199,8 +199,8 @@ public record ConfigurationModel : BaseNopModel
     public bool IframeHeight_OverrideForStore { get; set; }
 
     // Payment method checkboxes
-    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableCard")] 
-    public bool EnableCard { get; set; } = true;
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableCard")]
+    public bool EnableCard { get; set; }
     public bool EnableCard_OverrideForStore { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableACH")] 

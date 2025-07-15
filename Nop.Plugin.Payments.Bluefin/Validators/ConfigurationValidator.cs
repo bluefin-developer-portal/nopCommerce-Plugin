@@ -29,10 +29,23 @@ public class ConfigurationValidator : BaseNopValidator<ConfigurationModel>
             .NotEmpty()
             .WithMessageAwait(localizationService.GetResourceAsync("Plugins.Payments.Bluefin.Fields.AccountId.Required"));
 
-        // Require at least one payment method
-        RuleFor(model => model)
-            .Must(m => m.EnableCard || m.EnableACH || m.EnableGooglePay || m.EnableClickToPay)
-            .WithMessage("At least one payment method must be selected.");
+
+        RuleFor(model => model.IframeWidth)
+            .NotEmpty()
+            .When(m => !m.IframeResponsive)
+            .WithMessageAwait(localizationService.GetResourceAsync("Plugins.Payments.Bluefin.Fields.IframeWidth.Required"));
+
+
+        RuleFor(model => model.IframeHeight)
+            .NotEmpty()
+            .When(m => !m.IframeResponsive)
+            .WithMessageAwait(localizationService.GetResourceAsync("Plugins.Payments.Bluefin.Fields.IframeHeight.Required"));
+
+        RuleFor(m => m.EnableCard)
+            .NotEmpty()
+            .When(m => !(m.EnableCard || m.EnableACH || m.EnableGooglePay || m.EnableClickToPay))
+            // .Must(v => v.Equals(true))
+            .WithMessageAwait(localizationService.GetResourceAsync("Plugins.Payments.Bluefin.Fields.PaymentMethod.Required"));
     }
 
     #endregion

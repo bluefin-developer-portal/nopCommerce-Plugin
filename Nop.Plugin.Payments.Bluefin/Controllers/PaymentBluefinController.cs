@@ -153,6 +153,21 @@ public class PaymentBluefinController : BasePaymentController
         
         var bluefinPaymentSettings = await _settingService.LoadSettingAsync<BluefinPaymentSettings>(storeScope);
 
+        if (!(model.EnableCard || model.EnableACH || model.EnableGooglePay || model.EnableClickToPay))
+        {
+            _notificationService.ErrorNotification("At least one payment method must be selected.");
+            return await Configure();
+        }
+
+        if (!model.IframeResponsive)
+        {
+            if (string.IsNullOrEmpty(model.IframeWidth) || string.IsNullOrEmpty(model.IframeHeight))
+            {
+                _notificationService.ErrorNotification("Iframe Width and Height are required if not responsive");
+                return await Configure();
+            }
+        }
+
 
         bluefinPaymentSettings.EnableLogging = model.EnableLogging;
         bluefinPaymentSettings.UseSandbox = model.UseSandbox;
