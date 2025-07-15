@@ -102,7 +102,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.AccountId"] = "Account Identifer",
             ["Plugins.Payments.Bluefin.Fields.AccountId.Required"] = "Account Identifer is required",
             ["Plugins.Payments.Bluefin.Fields.UseSandbox"] = "Use sandbox environment",
-            ["Plugins.Payments.Bluefin.Fields.UseSandbox.Hint"] = "By enabling this property, they are using Blufin PayConex certification enviroment",
+            ["Plugins.Payments.Bluefin.Fields.UseSandbox.Hint"] = "By enabling this property, they are using Bluefin PayConex certification enviroment",
             ["Plugins.Payments.Bluefin.PaymentMethodDescription"] = "Pay With Bluefin",
             ["Plugins.Payments.Bluefin.Fields.UseAuthorizeOnly"] = "Authorize only (capture manually in the admin)",
             ["Plugins.Payments.Bluefin.Fields.UseAuthorizeOnly.Hint"] = "After Order Confirm, Admin -> Order -> Select the order to capture and click on Capture",
