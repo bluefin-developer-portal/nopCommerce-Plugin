@@ -327,7 +327,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
             capturePaymentResult.AddError(err_message);
 
-            // capturePaymentResult.NewPaymentStatus = PaymentStatus.Pending; // Authorized or Pending in this case
+            // capturePaymentResult.NewPaymentStatus = PaymentStatus.Pending; // Still Authorized or Pending in this case
         }
 
         return capturePaymentResult;

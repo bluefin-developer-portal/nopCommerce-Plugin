@@ -14,6 +14,7 @@
 @inject IGenericAttributeService genericAttributeService
 @inject INopHtmlHelper NopHtml
 @inject BluefinPaymentSettings bluefinPaymentSettings
+@inject IProductService productService
 
 @using Microsoft.AspNetCore.Mvc.ViewFeatures
 @using System.Text.Encodings.Web
@@ -38,9 +39,12 @@
 @using Nop.Web.Framework.Themes
 @using Nop.Web.Framework.UI
 @using Nop.Services.Directory
+@using Nop.Core.Domain.Directory
 @using Nop.Core.Domain.Orders
+@using Nop.Core.Domain.Common
 @using Nop.Services.Orders
 @using Nop.Services.Common
 @using Nop.Web.Factories
 @using Nop.Core.Domain.Shipping
 @using Nop.Core.Domain.Customers
+@using Nop.Services.Catalog

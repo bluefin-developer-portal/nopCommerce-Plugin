@@ -99,17 +99,36 @@
             // window.BluefinIframe = true
 
             @{
+                    // BillingAddress
                     var customer = await workContext.GetCurrentCustomerAsync();
                     var address = await addressService.GetAddressByIdAsync(customer.BillingAddressId ?? 0);
                     var stateProvince = await stateProvinceService.GetStateProvinceByAddressAsync(address);
                     var country = await countryService.GetCountryByAddressAsync(address);
 
-                    var shipping_address = await addressService.GetAddressByIdAsync(customer.ShippingAddressId ?? 0);
-                    var shipping_stateProvince = await stateProvinceService.GetStateProvinceByAddressAsync(shipping_address);
-                    var shipping_country = await countryService.GetCountryByAddressAsync(shipping_address);
+                    // ShippingAddress
+                    Address shipping_address = null;
+                    StateProvince shipping_stateProvince = null;
+                    Country shipping_country = null;
+
+                    var shippingEnabled = false;
 
                     var store = await storeContext.GetCurrentStoreAsync();
                     var cart = await shoppingCartService.GetShoppingCartAsync(customer, ShoppingCartType.ShoppingCart, store.Id);
+
+                    foreach(ShoppingCartItem cardItem in cart) {
+                        var product = await productService.GetProductByIdAsync(cardItem.ProductId);
+                        // NOTE: First Product in the cart to have shipping enabled wins
+                        if(product.IsShipEnabled) {
+                            shippingEnabled = true;
+                            break;
+                        }
+                    }
+
+                    if(shippingEnabled) {
+                        shipping_address = await addressService.GetAddressByIdAsync(customer.ShippingAddressId ?? 0);
+                        shipping_stateProvince = await stateProvinceService.GetStateProvinceByAddressAsync(shipping_address);
+                        shipping_country = await countryService.GetCountryByAddressAsync(shipping_address);
+                    }
 
                     var shopping_model = await shoppingCartModelFactory.PrepareOrderTotalsModelAsync(cart, false);
 
@@ -117,6 +136,7 @@
                         NopCustomerDefaults.SelectedPickupPointAttribute, store.Id);
 
                     var currency = await workContext.GetWorkingCurrencyAsync();
+
                     var devServer = bluefinPaymentSettings.UseSandbox ? 
                         BluefinPaymentDefaults.CheckoutComponentCERT : BluefinPaymentDefaults.CheckoutComponentPROD;
                 }
@@ -131,6 +151,8 @@
                     iframeConfig.height = '@(string.IsNullOrEmpty(Model.IframeHeight) ? "600px" : Model.IframeHeight)'
                 </text>
             }
+
+            let shippingEnabled = '@shippingEnabled' == 'True'
 
             let customer = {
                 CustomerId: '@customer.Id',
@@ -149,8 +171,11 @@
                     Zip: '@address?.ZipPostalCode',
                     Company: '@address?.Company',
                     Country: '@country?.ThreeLetterIsoCode'
-                },
-                ShippingAddress: {
+                }
+            }
+
+            if(shippingEnabled) {
+                customer.ShippingAddress = {
                     FirstName: '@shipping_address?.FirstName',
                     LastName: '@shipping_address?.LastName',
                     PhoneNumber: '+' + removeLeadingPlus('@shipping_address?.PhoneNumber'),
@@ -184,7 +209,7 @@
                 </text>
             }
 
-            // console.debug(customer)
+            // console.debug('customer:', shippingEnabled, customer)
             
 
             const callbacks = {
