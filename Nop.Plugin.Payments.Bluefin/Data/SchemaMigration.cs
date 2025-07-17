@@ -19,6 +19,7 @@ public class SchemaMigration : AutoReversingMigration
     public override void Up()
     {
         Create.TableFor<BluefinTokenEntry>();
+        Create.TableFor<TraceIdEntry>();
     }
 
     #endregion

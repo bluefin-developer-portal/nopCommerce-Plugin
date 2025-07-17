@@ -10,6 +10,9 @@ using Newtonsoft.Json;
 using Nop.Core.Domain.Logging;
 using Nop.Services.Logging;
 
+using Nop.Plugin.Payments.Bluefin.Domain;
+using Nop.Plugin.Payments.Bluefin.Services;
+
 
 namespace Nop.Plugin.Payments.Bluefin;
 
@@ -123,7 +126,8 @@ public class Utility
             + ", response=\"" + digest + "\"");
     }
 
-    static public string ParseBfTransactionId(string CustomValuesXml) {
+    static public string ParseBfTransactionId(string CustomValuesXml)
+    {
 
         XmlDocument doc = new XmlDocument();
         doc.LoadXml(CustomValuesXml);
@@ -188,11 +192,16 @@ public class BluefinGateway : BluefinLogger
     private readonly HttpClient _client;
     private readonly string _baseEnvURL;
 
+    private readonly TraceLogsRepositoryService _traceLogsRepositoryService;
+
     public BluefinGateway(ILogger logger,
-        BluefinPaymentSettings bluefinPaymentSettings) : base(logger, bluefinPaymentSettings.EnableLogging)
+        BluefinPaymentSettings bluefinPaymentSettings,
+        TraceLogsRepositoryService traceLogsRepositoryService
+        ) : base(logger, bluefinPaymentSettings.EnableLogging)
     {
         _bluefinPaymentSettings = bluefinPaymentSettings;
         _client = new HttpClient();
+        _traceLogsRepositoryService = traceLogsRepositoryService;
 
         if (_bluefinPaymentSettings.UseSandbox)
         {
@@ -238,6 +247,8 @@ public class BluefinGateway : BluefinLogger
         if (response != null)
         {
             var jsonString = await response.Content.ReadAsStringAsync();
+            
+            dynamic output = JsonConvert.DeserializeObject<object>(jsonString);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -246,10 +257,19 @@ public class BluefinGateway : BluefinLogger
                     source,
                     "Request: " + JsonConvert.SerializeObject(request) + ", " + "Response " + jsonString
                 );
+                
+                await _traceLogsRepositoryService.InsertAsync(
+                    new TraceIdEntry
+                    {
+                        TraceId = output.traceId,
+                        ErrorMessage = output.message,
+                        Json = jsonString
+                    }
+                );
 
             }
 
-            return JsonConvert.DeserializeObject<object>(jsonString);
+            return output;
         }
 
         return null;
@@ -268,11 +288,23 @@ public class BluefinGateway : BluefinLogger
 
             if (!response.IsSuccessStatusCode)
             {
+                dynamic output = JsonConvert.DeserializeObject<object>(jsonString);
+
                 await LogError(
                     source,
                     "Request: " + JsonConvert.SerializeObject(request) + ", " + "Response " + jsonString
                 );
-                transaction_res.Metadata = JsonConvert.DeserializeObject<object>(jsonString);
+
+                await _traceLogsRepositoryService.InsertAsync(
+                    new TraceIdEntry
+                    {
+                        TraceId = output.traceId,
+                        ErrorMessage = output.message,
+                        Json = jsonString
+                    }
+                );
+
+                transaction_res.Metadata = output;
                 transaction_res.IsSuccess = false;
                 return transaction_res;
             }
@@ -346,11 +378,13 @@ public class BluefinGateway : BluefinLogger
             request.customer.billingAddress.address2 = customer.BillingAddress.Address2;
         }
 
-        if (customer.BillingAddress.City != null) {
+        if (customer.BillingAddress.City != null)
+        {
             request.customer.billingAddress.city = customer.BillingAddress.City;
         }
 
-        if (customer.BillingAddress.State != null) {
+        if (customer.BillingAddress.State != null)
+        {
             request.customer.billingAddress.state = customer.BillingAddress.State;
         }
 
@@ -363,7 +397,8 @@ public class BluefinGateway : BluefinLogger
             request.customer.billingAddress.country = customer.BillingAddress.Country;
         }
 
-        if (customer.BillingAddress.Company != null) {
+        if (customer.BillingAddress.Company != null)
+        {
             request.customer.billingAddress.company = customer.BillingAddress.Company;
         }
 

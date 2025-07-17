@@ -1,0 +1,90 @@
+@model TraceLogModel
+
+@{
+    // ViewBag.PageTitle = "Bluefin Trace Logs";
+
+    Layout = "_AdminLayout";
+}
+
+<div asp-controller="PaymentBluefin">
+    <div class="content-header clearfix">
+        <h1>
+            Trace Entry Details
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="TraceLogs">Back to Trace Logs</a>
+            </small>
+        </h1>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Id" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.Id</div>
+                                </div>
+                            </div>
+
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="TraceId" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.TraceId</div>
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="ErrorMessage" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Html.Raw(Model.ErrorMessage)</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-0">
+                                    <nop-label asp-for="Json" />
+                                </div>
+                                <div class="col-md-12">
+                                    <div id="trace-json-viewer" class="form-text-row"></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="~/Plugins/Payments.Bluefin/Content/json-dom-viewer.js"/>
+
+    <script>
+        ;$(document).ready(function() {
+
+            let trace_json_viewer = document.querySelector("#trace-json-viewer")
+            Object.assign(trace_json_viewer.style, {
+                backgroundColor: '#f5efef',
+                fontSize: '1.1em',
+                borderRadius: '10px'
+            })
+
+            var trace_entry_object = @Html.Raw(Model.Json)
+            
+            trace_json_viewer.appendChild(viewJSON(trace_entry_object, 6, '', { "": true } ))
+
+        });
+
+    </script>
+
+</div>

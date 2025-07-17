@@ -26,6 +26,18 @@ using Nop.Web.Framework.Controllers;
 using Nop.Web.Framework.Mvc;
 using Nop.Web.Framework.Mvc.Filters;
 
+using Nop.Web.Areas.Admin.Models.Logging;
+
+using Nop.Web.Framework.Models.Extensions;
+
+using Nop.Web.Framework.Models;
+
+using  Nop.Web.Framework.Models.DataTables;
+
+
+public partial record TraceLogsListModel : BasePagedListModel<TraceLogModel>
+{
+}
 
 // [HttpsRequirement]
 // [AutoValidateAntiforgeryToken]
@@ -48,6 +60,7 @@ public class PaymentBluefinController : BasePaymentController
     private readonly BluefinGateway _gateway;
 
     private readonly BluefinTokenRepositoryService _bluefinTokenRepositoryService;
+    private readonly TraceLogsRepositoryService _traceLogsRepositoryService;
 
     public PaymentBluefinController(ILogger logger,
         ISettingService settingService,
@@ -57,6 +70,7 @@ public class PaymentBluefinController : BasePaymentController
         IGenericAttributeService genericAttributeService,
         BluefinPaymentSettings bluefinPaymentSettings,
         BluefinTokenRepositoryService bluefinTokenRepositoryService,
+        TraceLogsRepositoryService traceLogsRepositoryService,
         IWorkContext workContext,
         IStoreContext storeContext)
     {
@@ -69,17 +83,125 @@ public class PaymentBluefinController : BasePaymentController
         _bluefinPaymentSettings = bluefinPaymentSettings;
         _genericAttributeService = genericAttributeService;
         _bluefinTokenRepositoryService = bluefinTokenRepositoryService;
+        _traceLogsRepositoryService = traceLogsRepositoryService;
         _workContext = workContext;
-        _gateway = new BluefinGateway(logger, _bluefinPaymentSettings);
+        _gateway = new BluefinGateway(
+            logger,
+            _bluefinPaymentSettings,
+            traceLogsRepositoryService
+        );
     }
 
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
-    public async Task<IActionResult> MyIndex()
+    public async Task<IActionResult> TraceLogs()
     {
         // var data = await _dbContext.BluefinEntries.ToListAsync();
         return View("~/Plugins/Payments.Bluefin/Views/TraceLogs.cshtml"); // , data);
     }
+
+    [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.System.MANAGE_SYSTEM_LOG)]
+    public async Task<IActionResult> ViewTraceLog(int id)
+    {
+        var entry = await _traceLogsRepositoryService.GetById(id);
+
+        var model = new TraceLogModel
+        {
+            Id = entry.Id,
+            TraceId = entry.TraceId,
+            ErrorMessage = entry.ErrorMessage,
+            Json = entry.Json
+        };
+        
+        /*
+        var log = await _logger.GetLogByIdAsync(id);
+        if (log == null)
+            return RedirectToAction("List");
+
+        //prepare model
+        var model = await _logModelFactory.PrepareLogModelAsync(null, log);
+        */
+
+        return View("~/Plugins/Payments.Bluefin/Views/ViewTraceLog.cshtml", model);
+    }
+
+
+
+    // [HttpPost]
+    [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.System.MANAGE_SYSTEM_LOG)]
+    public async Task<IActionResult> TraceLogList()
+    {
+
+        var _list = await _traceLogsRepositoryService.GetAllLogs();
+
+        /*
+        var _list = new List<TraceLogModel>
+        {
+             new TraceLogModel
+            {
+                Id = 0,
+                TraceId = "c3abdb61-ca46-4cfc-8341-61ed69eee49a",
+                ErrorMessage = "bfTokenReference is expired",
+                Json = "{}"
+            },
+            new TraceLogModel
+            {
+                Id = 1,
+                TraceId = "373fe421-bc7c-49c7-9a46-6f2d109fc3d8",
+                ErrorMessage = "Request validation error: Does not conform to API schema.",
+                Json = "{}"
+            },
+        };
+        */
+
+
+        /*
+        // NOTE: Keep this commment if the functionality like this is needed down the line
+        var searchModel = new TraceSearchModel
+        {
+            // TraceId = "A",
+            // ErrorMessage = "B"
+            Draw = "1"
+        };
+
+        var logItems = new PagedList<TraceLogModel>(_list, 0, 10);
+        // logItems.ToPagedList();
+
+        var model = await new TraceLogsListModel().PrepareToGridAsync(searchModel, logItems, () =>
+        {
+            //fill in model values from the entity
+            return logItems.SelectAwait(async logItem =>
+            {
+                //fill in model values from the entity
+                // var logModel = logItem.ToModel<TraceLogModel>();
+                return logItem;
+            });
+        });
+        */
+
+        return Json(new
+        {
+            Data = _list,
+            draw = "1",
+            recordsFiltered = _list.Count,
+            recordsTotal = _list.Count,
+            CustomProperties = new { }
+        });
+
+        // return Json(model);
+
+        // return Json(new
+        // {
+        //    Data = _list
+        // });
+
+        // return Ok(new DataTablesModel { Data = _list });
+
+
+    }
+
 
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
@@ -113,7 +235,7 @@ public class PaymentBluefinController : BasePaymentController
             EnableClickToPay = bluefinPaymentSettings.EnableClickToPay
         };
 
-        await _gateway.LogDebug("DEBUG: storeScope " + storeScope.ToString(), "");
+        // await _gateway.LogDebug("storeScope " + storeScope.ToString(), "");
 
         if (storeScope > 0)
         {
@@ -150,7 +272,7 @@ public class PaymentBluefinController : BasePaymentController
     {
 
         var storeScope = await _storeContext.GetActiveStoreScopeConfigurationAsync();
-        
+
         var bluefinPaymentSettings = await _settingService.LoadSettingAsync<BluefinPaymentSettings>(storeScope);
 
         if (!(model.EnableCard || model.EnableACH || model.EnableGooglePay || model.EnableClickToPay))
@@ -264,5 +386,5 @@ public class PaymentBluefinController : BasePaymentController
 
         return Json(new { ok = true });
     }
-    
+
 }

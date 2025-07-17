@@ -69,7 +69,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         IWebHelper webHelper,
         IWorkContext workContext,
         IStoreContext storeContext,
-        BluefinPaymentSettings bluefinPaymentSettings
+        BluefinPaymentSettings bluefinPaymentSettings,
+        TraceLogsRepositoryService traceLogsRepositoryService
         )
     {
         _storeContext = storeContext;
@@ -80,7 +81,11 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         _settingService = settingService;
         _webHelper = webHelper;
         _bluefinPaymentSettings = bluefinPaymentSettings;
-        _gateway = new BluefinGateway(logger, _bluefinPaymentSettings);
+        _gateway = new BluefinGateway(
+            logger,
+            _bluefinPaymentSettings,
+            traceLogsRepositoryService
+        );
     }
 
     #endregion

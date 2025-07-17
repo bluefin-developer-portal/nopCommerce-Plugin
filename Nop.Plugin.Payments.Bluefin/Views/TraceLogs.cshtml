@@ -1,1 +1,57 @@
-<h1>QQQQ</h1>
+@model TraceSearchModel
+
+@{
+    // ViewBag.PageTitle = "Bluefin Trace Logs";
+
+    Layout = "_AdminLayout";
+}
+
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        Bluefin Trace Logs
+    </h1>
+</div>
+
+<div class="card card-default">
+    <div class="card-body">
+
+        @await Html.PartialAsync("Table", new DataTablesModel
+        {
+            Name = "log-grid",
+            UrlRead = new DataUrl("TraceLogList", "PaymentBluefin", null),
+            // SearchButtonId = "search-log",
+            Paging = false,
+            // Filters = new List<FilterParameter>
+            //    {
+                // new FilterParameter("CreatedOnFrom"),
+                // new FilterParameter(nameof(Model.CreatedOnTo)),
+                // new FilterParameter(nameof(Model.Message)),
+                // new FilterParameter(nameof(Model.LogLevelId))
+            //    },
+            ColumnCollection = new List<ColumnProperty>
+                {
+                    new ColumnProperty(nameof(Model.TraceId))
+                    {
+                        // IsMasterCheckBox = true,
+                        // Render = new RenderCheckBox("checkbox_log"),
+                        // ClassName = NopColumnClassDefaults.CenterAll,
+                        Title = "Trace Id",
+                        Width = "50"
+                    },
+                    new ColumnProperty(nameof(Model.ErrorMessage))
+                    {
+                        Title = "Error Message", // T("Admin.System.Log.Fields.LogLevel").Text,
+                        Width = "100"
+                    },
+                    new ColumnProperty(nameof(Model.Id))
+                    {
+                        Title = "View", // T("Admin.Common.View").Text,
+                        Width = "50",
+                        ClassName =  NopColumnClassDefaults.Button,
+                        Render = new RenderButtonView(new DataUrl("~/Admin/PaymentBluefin/ViewTraceLog"))
+                    }
+                }
+        })
+    </div>
+</div>
