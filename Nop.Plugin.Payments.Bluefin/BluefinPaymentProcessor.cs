@@ -54,6 +54,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
     private readonly IWebHelper _webHelper;
 
     private readonly BluefinPaymentSettings _bluefinPaymentSettings;
+    private readonly BluefinTokenRepositoryService _bluefinTokenRepositoryService;
 
     private readonly BluefinGateway _gateway;
 
@@ -70,6 +71,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         IWorkContext workContext,
         IStoreContext storeContext,
         BluefinPaymentSettings bluefinPaymentSettings,
+        BluefinTokenRepositoryService bluefinTokenRepositoryService,
         TraceLogsRepositoryService traceLogsRepositoryService
         )
     {
@@ -81,6 +83,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         _settingService = settingService;
         _webHelper = webHelper;
         _bluefinPaymentSettings = bluefinPaymentSettings;
+        _bluefinTokenRepositoryService = bluefinTokenRepositoryService;
         _gateway = new BluefinGateway(
             logger,
             _bluefinPaymentSettings,
@@ -135,6 +138,10 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.IframeHeight"] = "Iframe Height",
             ["Plugins.Payments.Bluefin.Fields.IframeHeight.Hint"] = "Height of the payment iframe (e.g., 600px, 60vh, 400px)",
             ["Plugins.Payments.Bluefin.Fields.IframeHeight.Required"] = "Iframe Height is required",
+            ["Plugins.Payments.Bluefin.Fields.IframeTimeout"] = "Iframe Timeout",
+            ["Plugins.Payments.Bluefin.Fields.IframeTimeout.Hint"] = "The user interaction limit timeout in seconds.",
+            ["Plugins.Payments.Bluefin.Fields.IframeTimeout.Required"] = "Iframe Timeout is required",
+
             ["Plugins.Payments.Bluefin.Fields.EnableCard"] = "Credit/Debit Card",
             ["Plugins.Payments.Bluefin.Fields.EnableACH"] = "ACH (Bank Transfer)",
             ["Plugins.Payments.Bluefin.Fields.EnableGooglePay"] = "Google Pay",
@@ -206,6 +213,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
         string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);
+        bool StoreBluefinToken = await _genericAttributeService.GetAttributeAsync<bool>(nop_customer, "StoreBluefinToken", nop_store.Id);
 
         TransactionResponse transaction_res = null;
 
@@ -234,7 +242,16 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         if (transaction_res.IsSuccess)
         {
-
+            if (StoreBluefinToken != null && StoreBluefinToken)
+            {
+                await _bluefinTokenRepositoryService.InsertAsync(
+                    new BluefinTokenEntry
+                    {
+                        CustomerId = nop_customer.Id,
+                        BfTokenReference = bfTokenReference
+                    }
+                );            
+            }
 
             await _gateway.LogDebug(
                 "Triggered ProcessPaymentAsync bfTokenReference: " + bfTokenReference,
@@ -258,6 +275,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 (string)null, // NOTE: Cast to string is required for compilation time
                 nop_store.Id
             );
+
+            await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
 
             await _gateway.LogDebug(
                 "Generic attribute cleanup",

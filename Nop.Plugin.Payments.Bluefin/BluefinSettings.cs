@@ -28,6 +28,8 @@ public class BluefinPaymentSettings : ISettings
     public string IframeWidth { get; set; } = "100%";
     public string IframeHeight { get; set; } = "600px";
 
+    public string IframeTimeout { get; set; }
+
     public bool EnableCard { get; set; } = true;
     public bool EnableACH { get; set; } = false;
     public bool EnableGooglePay { get; set; } = false;

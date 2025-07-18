@@ -40,7 +40,18 @@
                         <span asp-validation-for="ApiKeySecret" class="text-danger"></span>
                     </div>
                 </div>
-                
+
+
+                 <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="AccountId_OverrideForStore" asp-input="AccountId" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="AccountId" />
+                    </div>
+                    <div class="col-sm-9">
+                        <nop-editor asp-for="AccountId" asp-required="true" />
+                        <span asp-validation-for="AccountId" class="text-danger"></span>
+                    </div>
+                </div>               
 
                 <div class="form-group row">
                     <div class="col-sm-3">
@@ -50,17 +61,6 @@
                     <div class="col-sm-9">
                         <nop-editor asp-for="IFrameConfigId" asp-required="true" />
                         <span asp-validation-for="IFrameConfigId" class="text-danger"></span>
-                    </div>
-                </div>
-
-                <div class="form-group row">
-                    <div class="col-sm-3">
-                        <nop-override-store-checkbox asp-for="AccountId_OverrideForStore" asp-input="AccountId" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
-                        <nop-label asp-for="AccountId" />
-                    </div>
-                    <div class="col-sm-9">
-                        <nop-editor asp-for="AccountId" asp-required="true" />
-                        <span asp-validation-for="AccountId" class="text-danger"></span>
                     </div>
                 </div>
 
@@ -141,6 +141,17 @@
                     <div class="col-sm-6">
                         <nop-editor asp-for="IframeHeight" />
                         <span asp-validation-for="IframeHeight" class="text-danger"></span>
+                    </div>
+                </div>
+
+                <div class="form-group row">
+                    <div class="col-sm-3">
+                        <nop-override-store-checkbox asp-for="IframeTimeout_OverrideForStore" asp-input="IframeTimeout" asp-store-scope="@Model.ActiveStoreScopeConfiguration" />
+                        <nop-label asp-for="IframeTimeout" />
+                    </div>
+                    <div class="col-sm-6">
+                        <nop-editor asp-for="IframeTimeout" asp-required="true" />
+                        <span asp-validation-for="IframeTimeout" class="text-danger"></span>
                     </div>
                 </div>
 

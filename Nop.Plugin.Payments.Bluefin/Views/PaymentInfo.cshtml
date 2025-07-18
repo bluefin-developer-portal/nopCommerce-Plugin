@@ -152,9 +152,28 @@
                 </text>
             }
 
+            if(!window.iframe_session) {
+                window.iframe_session = {
+                    start: Date.now()
+                }
+            }
+
+            window.iframe_session.passed = Date.now() - window.iframe_session.start;
+
+            let passed = parseInt(window.iframe_session.passed / 1000)
+
+            let timeout = parseInt('@bluefinPaymentSettings.IframeTimeout') - passed;
+
+            if(timeout <= 0) {
+                alert("Iframe Payment Session Expired. Please, refresh the page and try again.")
+                return
+            }
+
+
             let shippingEnabled = '@shippingEnabled' == 'True'
 
             let customer = {
+                Timeout: timeout,
                 CustomerId: '@customer.Id',
                 // TODO: Try to find the proper order total so that we don't have to do this
                 Amount: removeCurrency('@shopping_model.OrderTotal'),
@@ -248,10 +267,12 @@
                                 headers: {
                                     "Content-Type": "application/x-www-form-urlencoded",
                                 },
+                                /*
                                 body: new URLSearchParams({
                                     customerId: '@customer.Id',
                                     bfTokenReference,
                                 })
+                                */
 
                             })
 
@@ -286,7 +307,8 @@
 
             // "Cache" the bearerToken in the current page so we keep keep the state of the checkout component after ValidatePaymentFormAsync
             // This also gets reused if the customer clicks on the "Back" button. However, there is one edge case where if we change the customer-related information by going back, the checkout component won't be recreated in the current page session.
-            if (!window.bearerToken) {
+            // if (!window.bearerToken) 
+            // {
                 $.ajax({
                     async: true,
                     type: 'POST',
@@ -304,6 +326,7 @@
                         alert(request.responseText)
                     }
                 })
+            /*
             } else {
                 window.IframeV2.init(iframeConfig,
                     window.bearerToken,
@@ -312,7 +335,9 @@
                     '@devServer')
 
             }
+            */
         }
+    
     })();
 
 

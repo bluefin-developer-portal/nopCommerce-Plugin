@@ -41,6 +41,10 @@ public class ConfigurationValidator : BaseNopValidator<ConfigurationModel>
             .When(m => !m.IframeResponsive)
             .WithMessageAwait(localizationService.GetResourceAsync("Plugins.Payments.Bluefin.Fields.IframeHeight.Required"));
 
+        RuleFor(model => model.IframeTimeout)
+            .NotEmpty()
+            .WithMessageAwait(localizationService.GetResourceAsync("Plugins.Payments.Bluefin.Fields.IframeTimeout.Required"));
+
         RuleFor(m => m.EnableCard)
             .NotEmpty()
             .When(m => !(m.EnableCard || m.EnableACH || m.EnableGooglePay || m.EnableClickToPay))

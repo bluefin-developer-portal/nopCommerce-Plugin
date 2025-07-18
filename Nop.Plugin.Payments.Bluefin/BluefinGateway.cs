@@ -18,6 +18,7 @@ namespace Nop.Plugin.Payments.Bluefin;
 
 public class BluefinCustomer
 {
+    public int? Timeout { get; set; }
     public int CustomerId { get; set; }
     public string Email { get; set; }
     public string Amount { get; set; } // TODO: Refactor to an Order class or similar
@@ -332,6 +333,7 @@ public class BluefinGateway : BluefinLogger
 
         request.label = "my-instance-1"; // TODO: Compose based on the Nop Customer Info?
         request.amount = customer.Amount;
+        request.timeout = customer.Timeout;
         request.currency = customer.Currency;
         request.bfTokenReferences = bfTokenReferences;
         request.initializeTransaction = true;
@@ -349,58 +351,65 @@ public class BluefinGateway : BluefinLogger
         // NOTE: Billing Address
         request.customer.billingAddress = new ExpandoObject();
 
-        if (customer.BillingAddress.FirstName != null && customer.BillingAddress.LastName != null)
-        {
-            request.customer.name = customer.BillingAddress.FirstName + " " + customer.BillingAddress.LastName;
-        }
-        else if (customer.BillingAddress.FirstName != null)
-        {
-            request.customer.name = customer.BillingAddress.FirstName;
-        }
 
         if (customer.Email != null)
         {
             request.customer.email = customer.Email;
         }
 
-        if (customer.BillingAddress.PhoneNumber != null)
+        if (customer.BillingAddress != null)
         {
-            request.customer.phone = customer.BillingAddress.PhoneNumber;
+            if (customer.BillingAddress.FirstName != null && customer.BillingAddress.LastName != null)
+            {
+                request.customer.name = customer.BillingAddress.FirstName + " " + customer.BillingAddress.LastName;
+            }
+            else if (customer.BillingAddress.FirstName != null)
+            {
+                request.customer.name = customer.BillingAddress.FirstName;
+            }
+
+            if (customer.BillingAddress.PhoneNumber != null)
+            {
+                request.customer.phone = customer.BillingAddress.PhoneNumber;
+            }
+
+            if (customer.BillingAddress.Address1 != null)
+            {
+                request.customer.billingAddress.address1 = customer.BillingAddress.Address1;
+            }
+
+            if (customer.BillingAddress.Address2 != null)
+            {
+                request.customer.billingAddress.address2 = customer.BillingAddress.Address2;
+            }
+
+            if (customer.BillingAddress.City != null)
+            {
+                request.customer.billingAddress.city = customer.BillingAddress.City;
+            }
+
+            if (customer.BillingAddress.State != null)
+            {
+                request.customer.billingAddress.state = customer.BillingAddress.State;
+            }
+
+            if (customer.BillingAddress.Zip != null)
+            {
+                request.customer.billingAddress.zip = customer.BillingAddress.Zip;
+            }
+            if (customer.BillingAddress.Country != null)
+            {
+                request.customer.billingAddress.country = customer.BillingAddress.Country;
+            }
+
+            if (customer.BillingAddress.Company != null)
+            {
+                request.customer.billingAddress.company = customer.BillingAddress.Company;
+            }
+
+
         }
 
-        if (customer.BillingAddress.Address1 != null)
-        {
-            request.customer.billingAddress.address1 = customer.BillingAddress.Address1;
-        }
-
-        if (customer.BillingAddress.Address2 != null)
-        {
-            request.customer.billingAddress.address2 = customer.BillingAddress.Address2;
-        }
-
-        if (customer.BillingAddress.City != null)
-        {
-            request.customer.billingAddress.city = customer.BillingAddress.City;
-        }
-
-        if (customer.BillingAddress.State != null)
-        {
-            request.customer.billingAddress.state = customer.BillingAddress.State;
-        }
-
-        if (customer.BillingAddress.Zip != null)
-        {
-            request.customer.billingAddress.zip = customer.BillingAddress.Zip;
-        }
-        if (customer.BillingAddress.Country != null)
-        {
-            request.customer.billingAddress.country = customer.BillingAddress.Country;
-        }
-
-        if (customer.BillingAddress.Company != null)
-        {
-            request.customer.billingAddress.company = customer.BillingAddress.Company;
-        }
 
         if (customer.ShippingAddress != null)
         {

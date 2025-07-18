@@ -10,7 +10,7 @@ namespace Nop.Plugin.Payments.Bluefin.Models;
 public record PaymentInfoModel : BaseNopModel
 {
     public string IFrameCompleted { get; set; }
-    
+
     public bool IframeResponsive { get; set; }
     public string IframeWidth { get; set; }
     public string IframeHeight { get; set; }

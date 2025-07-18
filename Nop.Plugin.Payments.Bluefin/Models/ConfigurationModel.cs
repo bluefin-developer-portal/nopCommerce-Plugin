@@ -198,6 +198,10 @@ public record ConfigurationModel : BaseNopModel
     public string IframeHeight { get; set; }
     public bool IframeHeight_OverrideForStore { get; set; }
 
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.IframeTimeout")]
+    public string IframeTimeout { get; set; }
+    public bool IframeTimeout_OverrideForStore { get; set; }
+
     // Payment method checkboxes
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.EnableCard")]
     public bool EnableCard { get; set; }
