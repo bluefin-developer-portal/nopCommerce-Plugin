@@ -34,7 +34,7 @@ Here are some of the key components that the Bluefin payment plugin offers to th
 ### **Versatile Transaction Processing**
 
 - **Security:** Bluefin ShieldConex® ensures that no sensitive card information is ever stored on your servers, significantly reducing the PCI scope.
-- **Card Not Present Transactions:** Before processing, CNP transactions primarily rely on ShieldConex® for security. **ShieldConex®** does not store any sensitive cardholder data. Instead, it uses tokenization/detokenization on its vaultless tokens for online PII, PHI, payments and ACH account data. These tokens can be securely utilized or stored on the merchant's server, significantly reducing the vendor's or merchant's PCI footprint. However, if the merchant loses these tokens, they _cannot_ be recovered.
+- **Card Not Present Transactions:** Before processing, CNP transactions primarily rely on ShieldConex® for security. **ShieldConex®** does not store any sensitive cardholder data. Instead, it uses tokenization/detokenization on its vaultless tokens for online PII, PHI, payments and ACH account data. These tokens can be securely utilized or stored on the merchant's server, significantly reducing the vendor's or merchant's PCI footprint. However, if the merchant loses these tokens, they _cannot_ be recovered. For more information, check out [PayConex™ and ShieldConex®](https://developers.bluefin.com/payconex/v4/reference/payconex-and-shieldconex).
 - **Transaction Types**: Our gateway supports a variety of the most common transaction types used on a day-to-day basis such as sale, authorization, store, capture, refund and credit.
 
 ### **3DS Support**
