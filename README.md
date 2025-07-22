@@ -4,7 +4,7 @@
 
 ## Overview
 
-This nopCommerce plugin combines the Bluefin Checkout Component and REST API, constituting the complete Bluefin payment method for nopCommerce platform.
+This nopCommerce plugin combines the Bluefin Checkout Component and REST API, constituting the complete ready-to-use Bluefin payment method for nopCommerce platform.
 
 The checkout component supports Card Payment, Google Pay, Mastercard Click to Pay, proving an all-in comprehensive eCommerce payment solution. 
 
@@ -148,4 +148,181 @@ With `Use 3D Secure` enabled, the merchant is required to configure the followin
     | `"PREPAID_ACTIVATION"`     | Refers to activating a prepaid account or card, often involving an initial funding transaction. |
 
 
+
+## Iframe Configuration
+
+Throughout this documentation, we are using the following iframe configuration.
+
+> 📘 Note
+>
+> For the `cardSettings`, we pretty much omit all of the customer-related information since we are passing it all before the checkout from the nopCommerce (current) customer.
+>
+> Typically, the Bluefin Integrations team creates this iframe configuration for the merchant if they don't want go into details of our APIs.
+
+**POST** `/api/v4/accounts/{accountId}/payment-iframe`
+
+```json
+{
+  "label": "Multi-Payment iframe",
+  "language": "ENGLISH",
+  "timeout": 600,
+  "allowedPaymentMethods": [
+    "CARD",
+    "ACH",
+    "GOOGLE_PAY",
+    "CLICK_TO_PAY"
+  ],
+  "allowedParentDomains": [
+    "demo.nopcommerce.com"
+  ],
+  "cardSettings": {
+    "cvv": "required",
+    "billingAddress": {
+      "address1": "omit",
+      "address2": "omit",
+      "city": "omit",
+      "state": "omit",
+      "zip": "omit"
+    },
+    "capturePhone": "omit",
+    "threeDSecure": "omit",
+    "captureEmail": "omit",
+    "captureShippingAddress": false
+  },
+  "achSettings": {
+    "billingAddress": {
+      "address1": "required",
+      "address2": "optional",
+      "city": "required",
+      "state": "required",
+      "zip": "required"
+    },
+    "capturePhone": "omit",
+    "captureEmail": "omit",
+    "captureShippingAddress": false
+  },
+  "clickToPaySettings": {
+    "srcDpaId": "3fa85f65-6728-4562-b3fd-2c963f66afa6",
+    "dpaName": "PayConex",
+    "dpaPresentationName": "PayConex App",
+    "allowedCardBrands": [
+      "VISA",
+      "MASTERCARD",
+      "AMERICAN_EXPRESS",
+      "DISCOVER",
+      "CHINA_UNION_PAY"
+    ]
+  },
+  "googlePaySettings": {
+    "merchantId": "12345678901234567890",
+    "merchantName": "Demo Merchant",
+    "billingAddressRequired": false,
+    "shippingAddressRequired": false,
+    "emailRequired": true,
+    "billingAddressParameters": {
+      "format": "MIN",
+      "phoneNumberRequired": false
+    },
+    "shippingAddressParameters": {
+      "allowedCountryCodes": ["US"],
+      "phoneNumberRequired": false
+    },
+    "allowedAuthMethods": [
+      "PAN_ONLY",
+      "CRYPTOGRAM_3DS"
+    ],
+    "allowedCardBrands": [
+      "VISA",
+      "MASTERCARD",
+      "AMERICAN_EXPRESS",
+      "DISCOVER",
+      "JCB",
+      "INTERAC"
+    ],
+    "threeDSecure": "omit"
+  },
+  "currency": "USD",
+  "savePaymentOption": "required"
+}
+```
+
+For the full breakdown of these settings, dive into [Creating a Configuration](https://developers.bluefin.com/payconex/v4/reference/creating-a-configuration).
+
+> In response, we receive the iFrame Configuration Identifier that is used to configure the plugin.
+
+
+
+## Customer Checkout
+
+After configuring the plugin, we need some Products we can check out with and test the Bluefin payment method.
+
+If you are in the nopCommerce sandbox environment, it is necessary to create some Products so that we have something to check out.
+
+This can be accomplished by going to [Admin Area](https://docs.nopcommerce.com/en/getting-started/admin-area-overview.html) -> Catalog -> Products -> Add new.
+
+
+
+Next, we add the Product to the cart and go to the checkout.
+
+
+
+### Checkout
+
+The Checkout Component securely transmits payment details directly to Bluefin's system, mitigating risk while maintaining a smooth and user-friendly checkout experience. This also reduces [PCI compliance scope](https://developers.bluefin.com/payconex/v4/reference/payconex-introduction#pci-scope) and enhances security.
+
+For all the examples of the payment methods, various checkout scenarios, and technical details, check out the [Customer Checkout](https://developers.bluefin.com/payconex/v4/reference/customer-checkout).
+
+Even though the Bluefin Checkout Component supports inputting billing and shipping address, the billing and shipping address is filled out and managed via nopCommerce. These are then passed onto the Checkout Component so that the customer is not required to reinput the same fields.
+
+
+
+
+
+#### Selecting Payment Method
+
+Now, we select the Bluefin Payment method.
+
+> 🚧 Note
+>
+> This requires the plugin to be enabled/active from nopCommerce.
+
+screenshot
+
+
+
+
+
+
+
+#### Pickup
+
+The plugin also implements the logic where the nopCommerce pickup option is selected as the shipping address.
+
+
+
+
+
+#### Omitting Shipping Address
+
+If the shipping address is omitted, the plugin is capable of handling that scenario by completely excluding the shipping address from the Bluefin transaction itself as well.
+
+In nopCommerce, the shipping is enabled _per product_. Thus, in order to omit it, the merchant needs to go to [Admin Area](https://docs.nopcommerce.com/en/getting-started/admin-area-overview.html) -> Catalog -> Products, select their desired product, and scroll down to `Shipping`.
+
+
+
+screenshot
+
+
+
+> 🚧 Note
+>
+> If the merchant configures their plugin not to use the shipping address while using the 3D Secure, then the `shippingIndicator` is required to be `BILLING_ADDRESS`.
+>
+> If, at least, one product is the cart requires shipping, the entire checkout will require the shipping address.
+
+
+
+
+
+### Confirming Order
 
