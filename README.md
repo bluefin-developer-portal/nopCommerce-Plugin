@@ -2,13 +2,23 @@
 
 
 
+## nopCommerce Plugin Information
+
+Being a payment method plugin, here are the CNP transaction types that it supports.
+
+| Friendly name | System name      | Supports capture | Refund | Partial refund | Void | Recurring support |
+| :------------ | :--------------- | :--------------- | :----- | :------------- | ---- | :---------------- |
+| Bluefin       | Payments.Bluefin | ✔                | ✔      | ✔              | ✗    | Not supported     |
+
+
+
 ## Overview
 
 This nopCommerce plugin combines the Bluefin Checkout Component and REST API, constituting the complete ready-to-use Bluefin payment method for nopCommerce platform.
 
 The checkout component supports Card Payment, Google Pay, Mastercard Click to Pay, proving an all-in comprehensive eCommerce payment solution. 
 
-It requires the merchant integration with the Bluefin Gateway where the integration team sets up your configuration according to your needs. The merchant is free to customize their iframe configuration and configure their payment method options on their own as they have gained enough experience while certifying with their Bluefin integration.
+The plugin requires the merchant integration with the Bluefin Gateway where the integration team sets up your configuration according to your needs. The merchant is free to customize their iframe configuration and configure their payment method options on their own as they have gained enough experience while certifying with their Bluefin integration.
 
 The plugin is built upon the Bluefin® PayConex™ REST API that connects to various PayConex™ services, thus serving as an HTTPS communication bridge to the PayConex™ Gateway.
 
@@ -44,18 +54,6 @@ Here are some of the key components that the Bluefin payment plugin offers to th
 - **Fraud Scoring:** Iframe configurations allow for anti-fraud service for extra authorization based on the score during transaction processing. Fraud Scoring is available through all our processors and help merchants score transactions based on rules. However, this is a feature on its own and it does *not* need to be used with 3D Secure.
 - **User Experience:** Ensure a smooth user experience while maintaining high security standards.
 - **3DS MPI Simulation**: Bluefin 3DS Solution can be simulated in the certification environment for testing purposes.
-
-
-
-## nopCommerce Plugin Information
-
-Being a payment method plugin, here are the CNP transaction types that it supports.
-
-| Friendly name | System name      | Supports capture | Refund | Partial refund | Void | Recurring support |
-| :------------ | :--------------- | :--------------- | :----- | :------------- | ---- | :---------------- |
-| Bluefin       | Payments.Bluefin | ✔                | ✔      | ✔              | ✗    | Not supported     |
-
-
 
 
 
