@@ -1,6 +1,6 @@
 ## nopCommerce Plugin Information
 
-Being a payment method plugin, here is its basic information with <<glossary:CNP>> transactions it supports.
+Being a payment method plugin, here is its basic information with CNP transactions it supports.
 
 | Friendly name | System name      | Supports capture | Refund | Partial refund | Void | Recurring support |
 | :------------ | :--------------- | :--------------- | :----- | :------------- | ---- | :---------------- |
