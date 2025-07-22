@@ -12,7 +12,9 @@ It requires the merchant integration with the Bluefin Gateway where the integrat
 
 The plugin is built upon the Bluefin® PayConex™ REST API that connects to various PayConex™ services, thus serving as an HTTPS communication bridge to the PayConex™ Gateway.
 
-Here are some of the key features that the Bluefin payment plugin offers to the merchant.
+
+
+Here are some of the key components that the Bluefin payment plugin offers to the merchant.
 
 > 📘 Note
 >
