@@ -14,15 +14,15 @@ The plugin is built upon the Bluefin® PayConex™ REST API that connects to var
 
 
 
+>📘 Note
+>
+>The merchant using this plugin is _not_ required to understand much of what's happening behind the scenes and how the Bluefin APIs are used.
+>
+>If you are interested in all the ins and outs, check out our [Comprehensive Documentation and Reference Materials](https://developers.bluefin.com/payconex/v4/reference/payconex-introduction).
+
+
+
 Here are some of the key components that the Bluefin payment plugin offers to the merchant.
-
-> 📘 Note
->
-> The merchant using this plugin is _not_ required to understand much of what's happening behind the scenes and how the Bluefin APIs are used.
->
-> If you are interested in all the ins and outs, check out our [Comprehensive Documentation and Reference Materials](https://developers.bluefin.com/payconex/v4/reference/payconex-introduction).
-
-
 
 ### **Bluefin Hosted Checkout Components**
 
