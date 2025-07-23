@@ -94,7 +94,7 @@ public class PaymentBluefinController : BasePaymentController
 
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
-    public async Task<IActionResult> TraceLogs()
+    public IActionResult TraceLogs() // async Task<IActionResult>
     {
         // var data = await _dbContext.BluefinEntries.ToListAsync();
         return View("~/Plugins/Payments.Bluefin/Views/TraceLogs.cshtml"); // , data);
@@ -111,7 +111,8 @@ public class PaymentBluefinController : BasePaymentController
             Id = entry.Id,
             TraceId = entry.TraceId,
             ErrorMessage = entry.ErrorMessage,
-            Json = entry.Json
+            Json = entry.Json,
+            Created = entry.Created
         };
         
         /*
@@ -135,6 +136,12 @@ public class PaymentBluefinController : BasePaymentController
     {
 
         var _list = await _traceLogsRepositoryService.GetAllLogs();
+
+        // TODO: Refactor to sort via query. This is inefficient
+        var _sorted = new List<TraceIdEntry>(_list);
+
+        // Descending
+        _sorted.Sort((x,y) => y.Created.CompareTo(x.Created));
 
         /*
         var _list = new List<TraceLogModel>
@@ -183,7 +190,7 @@ public class PaymentBluefinController : BasePaymentController
 
         return Json(new
         {
-            Data = _list,
+            Data = _sorted,
             draw = "1",
             recordsFiltered = _list.Count,
             recordsTotal = _list.Count,

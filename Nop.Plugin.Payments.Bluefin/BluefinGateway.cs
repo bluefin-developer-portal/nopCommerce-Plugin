@@ -264,7 +264,8 @@ public class BluefinGateway : BluefinLogger
                     {
                         TraceId = output.traceId,
                         ErrorMessage = output.message,
-                        Json = jsonString
+                        Json = jsonString,
+                        Created = DateTime.Now
                     }
                 );
 
@@ -301,7 +302,8 @@ public class BluefinGateway : BluefinLogger
                     {
                         TraceId = output.traceId,
                         ErrorMessage = output.message,
-                        Json = jsonString
+                        Json = jsonString,
+                        Created = DateTime.Now
                     }
                 );
 

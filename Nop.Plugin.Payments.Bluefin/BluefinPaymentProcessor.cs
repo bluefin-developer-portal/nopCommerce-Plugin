@@ -213,7 +213,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
         string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);
-        bool StoreBluefinToken = await _genericAttributeService.GetAttributeAsync<bool>(nop_customer, "StoreBluefinToken", nop_store.Id);
+        bool StoreBluefinToken = await _genericAttributeService.GetAttributeAsync<bool>(nop_customer, "StoreBluefinToken", nop_store.Id, false);
 
         TransactionResponse transaction_res = null;
 
@@ -242,7 +242,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         if (transaction_res.IsSuccess)
         {
-            if (StoreBluefinToken != null && StoreBluefinToken)
+            if (StoreBluefinToken) // StoreBluefinToken != null &&
             {
                 await _bluefinTokenRepositoryService.InsertAsync(
                     new BluefinTokenEntry
@@ -265,14 +265,14 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             await _genericAttributeService.SaveAttributeAsync<string>(
                 nop_customer,
                 "bfTokenReference",
-                (string)null, // NOTE: Cast to string is required for compilation time
+                (string)null, // NOTE: Casting to string is required at compilation time
                 nop_store.Id
             );
 
             await _genericAttributeService.SaveAttributeAsync<string>(
                 nop_customer,
                 "bfTransactionId",
-                (string)null, // NOTE: Cast to string is required for compilation time
+                (string)null, // NOTE: Casting to string is required at compilation time
                 nop_store.Id
             );
 

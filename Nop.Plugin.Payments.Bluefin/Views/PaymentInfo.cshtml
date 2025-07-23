@@ -308,8 +308,17 @@
             // "Cache" the bearerToken in the current page so we keep keep the state of the checkout component after ValidatePaymentFormAsync
             // This also gets reused if the customer clicks on the "Back" button. However, there is one edge case where if we change the customer-related information by going back, the checkout component won't be recreated in the current page session.
             // if (!window.bearerToken) 
-            // {
-                $.ajax({
+            {
+
+            /*
+            for(let message of (window.getEventListeners(window).message || [])) {
+                if(window.IframeV2.init.toString().indexOf(message.listener.toString()) != -1) {
+                    window.removeEventListener('message', message.listener)
+                }
+            }
+            */
+            
+            $.ajax({
                     async: true,
                     type: 'POST',
                     url: '@(Url.Action("InitIframe", "PaymentBluefin"))',
@@ -336,6 +345,7 @@
 
             }
             */
+            }
         }
     
     })();

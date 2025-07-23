@@ -15,4 +15,6 @@ public record TraceLogModel : BaseNopModel
     public string ErrorMessage { get; set; }
 
     public string Json { get; set; }
+
+    public DateTime Created { get; set; }
 }

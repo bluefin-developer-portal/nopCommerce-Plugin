@@ -19,7 +19,8 @@ public class TraceIdEntryBuilder : NopEntityBuilder<TraceIdEntry>
         table
             .WithColumn(nameof(TraceIdEntry.TraceId)).AsString(int.MaxValue).Nullable()
             .WithColumn(nameof(TraceIdEntry.ErrorMessage)).AsString(int.MaxValue).Nullable()
-            .WithColumn(nameof(TraceIdEntry.Json)).AsString(int.MaxValue).Nullable();
+            .WithColumn(nameof(TraceIdEntry.Json)).AsString(int.MaxValue).Nullable()
+            .WithColumn(nameof(TraceIdEntry.Created)).AsDateTime2().Nullable();
     }
 
     #endregion
