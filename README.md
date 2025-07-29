@@ -29,7 +29,9 @@ Here are some of the key components that the Bluefin payment plugin offers to th
 - **Easy Integration:** Use our secure, pre-built Checkout Component UI via our SDK, designed for seamless integration into your existing systems.
 - **Security:** These components are hosted on Bluefin's servers and handle all payment data input through an HTML iframe, ensuring that no sensitive credit card data reaches your servers.
 - **Flexible Management and Configuration**: With a set of API endpoints, you can easily configure and create iframe payment instances, and effectively overwrite the configuration for a specific instance per customer. For more, see [Creating an Instance](https://developers.bluefin.com/payconex/v4/reference/creating-an-instance).
-- **Tokenization:** Once the form is completed, it securely tokenizes the information for CNP transactions by communicating with the ShieldConex® tokenization service and utilizes a payment authentication service based on the type of payment method, e.g. 3DS(Credit or Debit Card), Google Account(Google Pay), ACH(Bank Information), Mastercard Click to Pay. After tokenization, a transaction is supposed to be processed during the PayConex™ token life-span (within 10 minutes).
+- **Tokenization:** Once the form is completed, it securely tokenizes the information for <<glossary:CNP>> transactions by communicating with the ShieldConex® tokenization service and utilizes a payment authentication service based on the type of payment method, e.g. <<glossary:3DS>> (Credit or Debit Card), Google Account (Google Pay), <<glossary:ACH>> (Bank Information), Mastercard Click to Pay. After tokenization, a transaction is supposed to be processed during the PayConex™ token life-span (within 10 minutes).
+- **Saved Cards**: The Checkout Component enables the customer to securely save their card data by checking the `Save payment method`. During the initialization of the iframe instance, the merchant supplies the saved token references, which facilitates faster checkout.
+
 
 ### **Versatile Transaction Processing**
 
