@@ -52,7 +52,17 @@ Here are some of the key components that the Bluefin payment plugin offers to th
 
 ## Installing the Plugin
 
-To build and install our Bluefin Payment Plugin, please follow the [Plugins in nopCommerce](https://docs.nopcommerce.com/en/getting-started/advanced-configuration/plugins-in-nopcommerce.html) Guide for building and installing third-party plugins.
+First, download the latest release of our Bluefin Payment Plugin from [GitHub](https://github.com/bluefin-developer-portal/nopCommerce-Plugin/releases).
+
+After downloading the zip of the plugin's binary(`Payments.Bluefin.zip`), go to `Admin -> Configuration -> Local Plugins` upload the zip.
+
+Please follow the [Plugins in nopCommerce](https://docs.nopcommerce.com/en/getting-started/advanced-configuration/plugins-in-nopcommerce.html) Guide for installing third-party plugins.
+
+> 📘 Building is not required
+>
+> By downloading `Payments.Bluefin.zip`, you do not need to build the plugin - only install it as mentioned above.
+>
+> If you are a developer testing, you may as well download the source code and build our solution.
 
 
 
