@@ -44,10 +44,11 @@ Here are some of the key components that the Bluefin payment plugin offers to th
 
 - **Security Backbone:** Besides the vaultless tokenization solution by ShieldConex®, Bluefin provides one of the security backbones for processing online CNP transactions, with iframe configurations that can fully integrate 3DS as a feature of PayConex™.
 - **Fraud Prevention:** Implement 3DS to enhance fraud prevention and secure customer authentication.
-- **Fraud Scoring:** Iframe configurations allow for anti-fraud service for extra authorization based on the score during transaction processing. Fraud Scoring is available through all our processors and help merchants score transactions based on rules. However, this is a feature on its own and it does _not_ need to be used with 3D Secure.
 - **User Experience:** Ensure a smooth user experience while maintaining high security standards.
 - **3DS MPI Simulation**: Bluefin 3DS Solution can be simulated in the certification environment for testing purposes.
 
+
+<!-- **Fraud Scoring:** Iframe configurations allow for anti-fraud service for extra authorization based on the score during transaction processing. Fraud Scoring is available through all our processors and help merchants score transactions based on rules. However, this is a feature on its own and it does _not_ need to be used with 3D Secure. -->
 
 
 ## Installing the Plugin
