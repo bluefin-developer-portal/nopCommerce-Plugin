@@ -127,17 +127,52 @@ public class Utility
             + ", response=\"" + digest + "\"");
     }
 
-    static public string ParseBfTransactionId(string CustomValuesXml)
+    static public string ParseBfTransactionId(BluefinGateway gateway, string CustomValuesXml)
     {
 
         XmlDocument doc = new XmlDocument();
         doc.LoadXml(CustomValuesXml);
         string jsonText = JsonConvert.SerializeXmlNode(doc);
 
-        var definition = new { DictionarySerializer = new { item = new { key = "", value = "" } } };
-        var jsonParsed = JsonConvert.DeserializeAnonymousType(jsonText, definition);
+        /*
+        gateway.LogDebug(
+            "ParseBfTransactionId",
+            "jsonText:" + jsonText
+        ).Wait();
+        */
 
-        string bfTransactionId = jsonParsed.DictionarySerializer.item.value;
+        string bfTransactionId = "";
+
+        try
+        {
+            var definition = new
+            {
+                DictionarySerializer = new
+                {
+                    item = new List<Dictionary<string, string>>()
+                }
+            };
+
+            var jsonParsed = JsonConvert.DeserializeAnonymousType(jsonText, definition);
+
+            int bftrans_inx = jsonParsed.DictionarySerializer.item.FindIndex(pair =>
+                    pair["key"] == "Bluefin Transaction Identifier");
+
+            if (bftrans_inx != -1)
+            {
+                bfTransactionId = jsonParsed.DictionarySerializer.item[bftrans_inx]["value"];
+            }
+
+        }
+        catch (JsonSerializationException) // NOTE: Ensure Backwards compatibility with the old version that was used to make payments.
+        {
+            var definition = new { DictionarySerializer = new { item = new { key = "", value = "" } } };
+            var jsonParsed = JsonConvert.DeserializeAnonymousType(jsonText, definition);
+
+            bfTransactionId = jsonParsed.DictionarySerializer.item.value;
+        }
+
+
 
         return bfTransactionId;
     }
@@ -553,7 +588,9 @@ public class BluefinGateway : BluefinLogger
             {
                 total = transaction.AmountToRefund,
                 currency = transaction.Currency
-
+            },
+            trace = new {
+              source = "nopCommerce store"
             }
         };
 
@@ -588,6 +625,9 @@ public class BluefinGateway : BluefinLogger
                 currency = transaction.Currency
 
             },
+            trace = new {
+              source = "nopCommerce store"
+            },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
         };
@@ -621,6 +661,9 @@ public class BluefinGateway : BluefinLogger
             {
                 total = transaction.Total,
                 currency = transaction.Currency
+            },
+            trace = new {
+              source = "nopCommerce store"
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile

@@ -25,6 +25,11 @@ using Nop.Services.Directory;
 using Nop.Services.Localization;
 using Nop.Services.Logging;
 using Nop.Services.Messages;
+using Nop.Services.Orders;
+
+using Nop.Web.Factories;
+
+using Nop.Core.Domain.Vendors;
 
 
 using Nop.Plugin.Payments.Bluefin.Components;
@@ -44,6 +49,20 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
     private readonly IGenericAttributeService _genericAttributeService;
     private readonly IWorkContext _workContext;
+
+    private readonly IProductService _productService;
+
+    private readonly IShoppingCartService _shoppingCartService;
+
+    private readonly IShoppingCartModelFactory _shoppingCartModelFactory;
+
+
+    protected readonly IProductAttributeParser _productAttributeParser;
+    protected readonly IProductAttributeService _productAttributeService;
+
+    protected readonly IAttributeParser<VendorAttribute, VendorAttributeValue> _vendorAttributeParser;
+
+
     private readonly IStoreContext _storeContext;
     
     private readonly ILocalizationService _localizationService;
@@ -72,12 +91,22 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         IStoreContext storeContext,
         BluefinPaymentSettings bluefinPaymentSettings,
         BluefinTokenRepositoryService bluefinTokenRepositoryService,
-        TraceLogsRepositoryService traceLogsRepositoryService
+        TraceLogsRepositoryService traceLogsRepositoryService,
+        IProductService productService,
+        IShoppingCartService shoppingCartService,
+        IShoppingCartModelFactory shoppingCartModelFactory,
+        IProductAttributeParser productAttributeParser,
+        IProductAttributeService productAttributeService,
+        IAttributeParser<VendorAttribute, VendorAttributeValue> vendorAttributeParser
         )
     {
         _storeContext = storeContext;
         _genericAttributeService = genericAttributeService;
         _workContext = workContext;
+        _productService = productService;
+        _shoppingCartService = shoppingCartService;
+        _shoppingCartModelFactory = shoppingCartModelFactory;
+        _vendorAttributeParser = vendorAttributeParser;
         _notificationService = notificationService;
         _localizationService = localizationService;
         _settingService = settingService;
@@ -89,6 +118,10 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             _bluefinPaymentSettings,
             traceLogsRepositoryService
         );
+
+        _productAttributeParser = productAttributeParser;
+        _productAttributeService = productAttributeService;
+        
     }
 
     #endregion
@@ -211,6 +244,89 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         );
 
 
+        /*
+
+        var cart = await _shoppingCartService.GetShoppingCartAsync(nop_customer, ShoppingCartType.ShoppingCart, nop_store.Id);
+
+        var currentLanguage = await _workContext.GetWorkingLanguageAsync();
+
+
+        foreach (ShoppingCartItem cardItem in cart)
+        {
+
+            foreach (var attribute in await _productAttributeParser.ParseProductAttributeMappingsAsync(cardItem.AttributesXml))
+            {
+                var productAttribute = await _productAttributeService.GetProductAttributeByIdAsync(attribute.ProductAttributeId);
+
+                var attributeName = await _localizationService.GetLocalizedAsync(productAttribute, a => a.Name, currentLanguage.Id);
+
+
+                if (!attribute.ShouldHaveValues())
+                {
+
+                    foreach (var value in _productAttributeParser.ParseValues(cardItem.AttributesXml, attribute.Id))
+                    {
+                        await _gateway.LogDebug(
+                            "ProcessPaymentAsync _productAttributeService value: " + attribute.AttributeControlType,
+                            value
+                        );
+                        
+                    }
+
+                }
+                else
+                {
+                    foreach (var attributeValue in await _productAttributeParser.ParseProductAttributeValuesAsync(cardItem.AttributesXml, attribute.Id))
+                    {
+                        // if (attribute.AttributeControlType == AttributeControlType.DropdownList)
+                        // {
+                        // }
+
+                        await _gateway.LogDebug(
+                            "ProcessPaymentAsync _productAttributeService value: " + attribute.AttributeControlType,
+                            await _localizationService.GetLocalizedAsync(attributeValue, a => a.Name, currentLanguage.Id)
+                        );
+                    }
+
+                }
+
+
+            }
+            await _gateway.LogDebug(
+                "ProcessPaymentAsync cardItem.AttributesXml: ",
+                cardItem.AttributesXml
+            );
+
+        }
+        */
+
+
+        var shopping_model_factory = await _shoppingCartModelFactory.PrepareMiniShoppingCartModelAsync();
+
+        string productAttributes_string = "";
+
+
+        foreach (var item in shopping_model_factory.Items)
+        {
+
+            if (!string.IsNullOrEmpty(item.AttributeInfo))
+            {
+
+                // NOTE: Multi-line textbox will also include "<br/ >" so this is NOT the solution long-term.
+                productAttributes_string += item.AttributeInfo.Replace("<br />", ", ");
+                
+                /*
+                await _gateway.LogDebug(
+                    "ProcessPaymentAsync _shoppingCartModelFactory: ",
+                    "DD"
+                );
+                */
+
+            }
+
+        }
+
+
         string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
         string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);
         bool StoreBluefinToken = await _genericAttributeService.GetAttributeAsync<bool>(nop_customer, "StoreBluefinToken", nop_store.Id, false);
@@ -259,6 +375,14 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 );
 
             processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
+
+
+            if (!string.IsNullOrEmpty(productAttributes_string))
+            {
+                processPaymentRequest.CustomValues.Add("Product Attributes", productAttributes_string);
+
+            }
+            
             // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
 
             // // TODO: Proper Delete. However, this suffices
@@ -327,7 +451,12 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
     {
         var capturePaymentResult = new CapturePaymentResult();
 
-        string bfTransactionId = Utility.ParseBfTransactionId(capturePaymentRequest.Order.CustomValuesXml);
+        await _gateway.LogDebug(
+            "CaptureAsync CustomValuesXML",
+            "CustomValuesXml:" + capturePaymentRequest.Order.CustomValuesXml
+        );
+
+        string bfTransactionId = Utility.ParseBfTransactionId(_gateway, capturePaymentRequest.Order.CustomValuesXml);
 
         await _gateway.LogDebug(
             "CaptureAsync CustomValuesXML",
@@ -378,7 +507,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         }
         */
 
-        string bfTransactionId = Utility.ParseBfTransactionId(refundPaymentRequest.Order.CustomValuesXml);
+        string bfTransactionId = Utility.ParseBfTransactionId(_gateway, refundPaymentRequest.Order.CustomValuesXml);
 
         var refund_transaction = new RefundTransaction
         {

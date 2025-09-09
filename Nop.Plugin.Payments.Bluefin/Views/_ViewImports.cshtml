@@ -11,6 +11,7 @@
 @inject IStoreContext storeContext
 @inject IShoppingCartService shoppingCartService
 @inject IShoppingCartModelFactory shoppingCartModelFactory
+
 @inject IGenericAttributeService genericAttributeService
 @inject INopHtmlHelper NopHtml
 @inject BluefinPaymentSettings bluefinPaymentSettings
@@ -20,8 +21,8 @@
 @using System.Text.Encodings.Web
 @using Newtonsoft.Json
 
-@using Nop.Plugin.Payments.Bluefin;
-@using Nop.Plugin.Payments.Bluefin.Models;
+@using Nop.Plugin.Payments.Bluefin
+@using Nop.Plugin.Payments.Bluefin.Models
 
 @using Nop.Core
 @using Nop.Web.Areas.Admin.Components

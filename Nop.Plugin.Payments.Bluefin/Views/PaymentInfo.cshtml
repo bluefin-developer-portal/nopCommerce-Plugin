@@ -132,6 +132,7 @@
 
                     var shopping_model = await shoppingCartModelFactory.PrepareOrderTotalsModelAsync(cart, false);
 
+
                     var pickupPoint = await genericAttributeService.GetAttributeAsync<PickupPoint>(customer,
                         NopCustomerDefaults.SelectedPickupPointAttribute, store.Id);
 
