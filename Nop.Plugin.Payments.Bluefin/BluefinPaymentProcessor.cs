@@ -275,7 +275,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         if (transaction_res.IsSuccess)
         {
-            if (StoreBluefinToken) // StoreBluefinToken != null &&
+            if (StoreBluefinToken
+                && transaction_res.Metadata.bfTokenReference != null) // StoreBluefinToken != null &&
             {
                 await _bluefinTokenRepositoryService.InsertAsync(
                     new BluefinTokenEntry
@@ -292,30 +293,34 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 );
 
             processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
-            
+
             // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
 
-            // // TODO: Proper Delete. However, this suffices
-            await _genericAttributeService.SaveAttributeAsync<string>(
-                nop_customer,
-                "bfTokenReference",
-                (string)null, // NOTE: Casting to string is required at compilation time
-                nop_store.Id
-            );
+            // Consider doing the same for else of transaction_res.IsSuccess. However, that may pose challenges if they retry the transaction during the same checkout session.
+            {
+                // TODO: Proper Delete. However, this suffices
+                await _genericAttributeService.SaveAttributeAsync<string>(
+                    nop_customer,
+                    "bfTokenReference",
+                    (string)null, // NOTE: Casting to string is required at compilation time
+                    nop_store.Id
+                );
 
-            await _genericAttributeService.SaveAttributeAsync<string>(
-                nop_customer,
-                "bfTransactionId",
-                (string)null, // NOTE: Casting to string is required at compilation time
-                nop_store.Id
-            );
+                await _genericAttributeService.SaveAttributeAsync<string>(
+                    nop_customer,
+                    "bfTransactionId",
+                    (string)null, // NOTE: Casting to string is required at compilation time
+                    nop_store.Id
+                );
 
-            await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
+                await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
 
-            await _gateway.LogDebug(
-                "Generic attribute cleanup",
-                await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
-            );
+                await _gateway.LogDebug(
+                    "Generic attribute cleanup",
+                    await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
+                );
+            }
+
 
             // See: https://webiant.com/docs/nopcommerce/Libraries/Nop.Core/Domain/Payments/PaymentStatus
             if (_bluefinPaymentSettings.UseAuthorizeOnly)
