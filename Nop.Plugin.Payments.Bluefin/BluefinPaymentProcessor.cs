@@ -227,6 +227,11 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
     public PaymentMethodType PaymentMethodType => PaymentMethodType.Standard;
     public bool SkipPaymentInfo => false;
 
+    public bool IsTokenVaulated(TransactionResponse transaction_res)
+    {
+        return transaction_res.Metadata.bfTokenReference != null;
+    }
+
     public async Task<ProcessPaymentResult> ProcessPaymentAsync(ProcessPaymentRequest processPaymentRequest)
     {
         // processPaymentRequest.CustomerId
@@ -243,6 +248,35 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             "Transaction Metadata: "
         );
 
+        var shopping_model_factory = await _shoppingCartModelFactory.PrepareMiniShoppingCartModelAsync();
+
+        string productAttributes_string = "";
+        int item_c = 0;
+
+        
+        foreach (var item in shopping_model_factory.Items)
+        {
+
+            if (!string.IsNullOrEmpty(item.AttributeInfo))
+            {
+
+                // NOTE: Multi-line textbox will also include "<br/ >" so this is NOT optimal long-term.
+                productAttributes_string += item.ProductName + ": "
+                            + item.AttributeInfo.Replace("<br />", ", ");
+
+                if (item_c < shopping_model_factory.Items.Count - 1)
+                {
+
+                    productAttributes_string += '\n'; // NOTE: separator
+                }
+
+            }
+
+            item_c++;
+        }
+
+        await _gateway.LogDebug("productAttributes_string: ", productAttributes_string);
+
 
         string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
         string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);
@@ -257,7 +291,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             TransactionId = bfTransactionId,
             Total = processPaymentRequest.OrderTotal.ToString(),
             Currency = currency.CurrencyCode,
-            BfTokenReference = bfTokenReference
+            BfTokenReference = bfTokenReference,
+            Description = productAttributes_string,
         };
 
 
@@ -276,7 +311,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         if (transaction_res.IsSuccess)
         {
             if (StoreBluefinToken
-                && transaction_res.Metadata.bfTokenReference != null) // StoreBluefinToken != null &&
+                && IsTokenVaulated(transaction_res))
             {
                 await _bluefinTokenRepositoryService.InsertAsync(
                     new BluefinTokenEntry
@@ -284,7 +319,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                         CustomerId = nop_customer.Id,
                         BfTokenReference = bfTokenReference
                     }
-                );            
+                );
             }
 
             await _gateway.LogDebug(

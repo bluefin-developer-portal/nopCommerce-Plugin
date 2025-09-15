@@ -12,6 +12,7 @@ using Nop.Services.Logging;
 
 using Nop.Plugin.Payments.Bluefin.Domain;
 using Nop.Plugin.Payments.Bluefin.Services;
+using DocumentFormat.OpenXml.Drawing.Diagrams;
 
 
 namespace Nop.Plugin.Payments.Bluefin;
@@ -61,6 +62,8 @@ public class Transaction
     public string Total { get; set; }
     public string Currency { get; set; }
     public string BfTokenReference { get; set; }
+
+    public string Description { get; set; }
 }
 
 public class TransactionResponse
@@ -618,6 +621,7 @@ public class BluefinGateway : BluefinLogger
         var request = new
         {
             transactionId = transaction.TransactionId,
+            description = string.IsNullOrEmpty(transaction.Description) ? "" : transaction.Description,
             posProfile = "ECOMMERCE",
             amounts = new
             {
@@ -625,8 +629,9 @@ public class BluefinGateway : BluefinLogger
                 currency = transaction.Currency
 
             },
-            trace = new {
-              source = "nopCommerce store"
+            trace = new
+            {
+                source = "nopCommerce store"
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
@@ -656,14 +661,16 @@ public class BluefinGateway : BluefinLogger
         var request = new
         {
             transactionId = transaction.TransactionId,
+            description = string.IsNullOrEmpty(transaction.Description) ? "" : transaction.Description,
             posProfile = "ECOMMERCE",
             amounts = new
             {
                 total = transaction.Total,
                 currency = transaction.Currency
             },
-            trace = new {
-              source = "nopCommerce store"
+            trace = new
+            {
+                source = "nopCommerce store"
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
