@@ -354,9 +354,12 @@ public class PaymentBluefinController : BasePaymentController
         await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.EnableGooglePay, model.EnableGooglePay_OverrideForStore, storeScope, false);
         await _settingService.SaveSettingOverridablePerStoreAsync(bluefinPaymentSettings, settings => settings.EnableClickToPay, model.EnableClickToPay_OverrideForStore, storeScope, false);
 
-        // await _settingService.ClearCacheAsync();
         await _settingService.SaveSettingAsync(bluefinPaymentSettings, storeScope);
 
+        // Note: Clear settings cache
+        await _settingService.ClearCacheAsync();
+
+        
         _notificationService.SuccessNotification(await _localizationService.GetResourceAsync("Admin.Plugins.Saved"));
 
         return await Configure();

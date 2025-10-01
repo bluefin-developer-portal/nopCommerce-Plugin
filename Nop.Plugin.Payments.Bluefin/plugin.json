@@ -2,7 +2,7 @@
   "Group": "Payment methods",
   "FriendlyName": "Bluefin",
   "SystemName": "Payments.Bluefin",
-  "Version": "1.2.0",
+  "Version": "1.2.2",
   "SupportedVersions": [ "4.80", "4.90" ],
   "Author": "Bluefin",
   "DisplayOrder": 1,

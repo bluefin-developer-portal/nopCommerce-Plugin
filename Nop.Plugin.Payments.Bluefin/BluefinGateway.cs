@@ -593,7 +593,7 @@ public class BluefinGateway : BluefinLogger
                 currency = transaction.Currency
             },
             trace = new {
-              source = "nopCommerce store"
+              source = "nopCommerce Plugin"
             }
         };
 
@@ -631,7 +631,7 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce store"
+                source = "nopCommerce Plugin"
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
@@ -670,7 +670,7 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce store"
+                source = "nopCommerce Plugin"
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile

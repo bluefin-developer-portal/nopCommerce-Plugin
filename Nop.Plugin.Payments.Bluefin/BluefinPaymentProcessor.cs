@@ -248,9 +248,12 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             "Transaction Metadata: "
         );
 
-        var shopping_model_factory = await _shoppingCartModelFactory.PrepareMiniShoppingCartModelAsync();
+        
 
         string productAttributes_string = "";
+
+        /*
+        var shopping_model_factory = await _shoppingCartModelFactory.PrepareMiniShoppingCartModelAsync();
         int item_c = 0;
 
         
@@ -274,8 +277,10 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
             item_c++;
         }
-
         await _gateway.LogDebug("productAttributes_string: ", productAttributes_string);
+        */
+
+        
 
 
         string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);

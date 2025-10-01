@@ -88,8 +88,14 @@
 
         }
 
-        function removeLeadingPlus(phoneNumber) {
-            return phoneNumber.replaceAll('&#x2B;', '')
+        function parsePhoneNumber(phoneNumber) {
+            let parsedPhoneNumber = ''
+            phoneNumber = phoneNumber.replaceAll('&#x2B;', '')
+
+            for(let c of phoneNumber) {
+                if(isDigit(c)) parsedPhoneNumber += c
+            }
+            return parsedPhoneNumber
         }
 
 
@@ -183,7 +189,7 @@
                 BillingAddress: {
                     FirstName: '@address?.FirstName',
                     LastName: '@address?.LastName',
-                    PhoneNumber: '+' + removeLeadingPlus('@address?.PhoneNumber'),
+                    PhoneNumber: '+' + parsePhoneNumber('@address?.PhoneNumber'),
                     Address1: '@address?.Address1',
                     Address2: '@address?.Address2',
                     City: '@address?.City',
@@ -198,7 +204,7 @@
                 customer.ShippingAddress = {
                     FirstName: '@shipping_address?.FirstName',
                     LastName: '@shipping_address?.LastName',
-                    PhoneNumber: '+' + removeLeadingPlus('@shipping_address?.PhoneNumber'),
+                    PhoneNumber: '+' + parsePhoneNumber('@shipping_address?.PhoneNumber'),
                     Address1: '@shipping_address?.Address1',
                     Address2: '@shipping_address?.Address2',
                     City: '@shipping_address?.City',
