@@ -383,13 +383,14 @@ public class PaymentBluefinController : BasePaymentController
     }
 
     [HttpPost]
-    public async Task<IActionResult> SetBluefinToken(string bfTokenReference)
+    public async Task<IActionResult> SetBluefinToken(string bfTokenReference, string paymentType)
     {
 
         var nop_customer = await _workContext.GetCurrentCustomerAsync();
         var nop_store = await _storeContext.GetCurrentStoreAsync();
 
         await _genericAttributeService.SaveAttributeAsync(nop_customer, "bfTokenReference", bfTokenReference, nop_store.Id);
+        await _genericAttributeService.SaveAttributeAsync(nop_customer, "paymentType", paymentType, nop_store.Id);
 
 
         return Json(new { ok = true });

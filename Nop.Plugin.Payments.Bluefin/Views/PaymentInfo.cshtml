@@ -248,6 +248,8 @@
                 checkoutComplete: async function (data) {
                     const bfTokenReference = data.bfTokenReference
 
+                    const paymentType = data.data.type
+
                     try {
                         let response = await fetch('@(Url.Action("SetBluefinToken", "PaymentBluefin"))', {
                             method: "POST",
@@ -256,6 +258,7 @@
                             },
                             body: new URLSearchParams({
                                 bfTokenReference,
+                                paymentType,
                             })
 
                         })

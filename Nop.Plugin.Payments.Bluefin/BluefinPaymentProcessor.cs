@@ -282,6 +282,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         
 
+        string paymentType = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "paymentType", nop_store.Id);
 
         string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
         string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);
@@ -291,94 +292,177 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         var processPaymentResult = new ProcessPaymentResult();
 
-        var transaction = new Transaction
-        {
-            TransactionId = bfTransactionId,
-            Total = processPaymentRequest.OrderTotal.ToString(),
-            Currency = currency.CurrencyCode,
-            BfTokenReference = bfTokenReference,
-            Description = productAttributes_string,
-        };
+        processPaymentRequest.CustomValues.Add("Bluefin Payment Type", paymentType);
 
-
-        if (_bluefinPaymentSettings.UseAuthorizeOnly)
+        if (paymentType == "ACH")
         {
-            transaction_res = await _gateway.ProcessAuthorization(transaction);
-            // processPaymentRequest.CustomValues.Add("Bluefin Transaction Type", "Authorization");
-        }
-        else
-        {
-            transaction_res = await _gateway.ProcessSale(transaction);
-            // processPaymentRequest.CustomValues.Add("Bluefin Transaction Type", "Sale");
-        }
-
-
-        if (transaction_res.IsSuccess)
-        {
-            if (StoreBluefinToken
-                && IsTokenVaulated(transaction_res))
+            var transaction = new Transaction
             {
-                await _bluefinTokenRepositoryService.InsertAsync(
-                    new BluefinTokenEntry
-                    {
-                        CustomerId = nop_customer.Id,
-                        BfTokenReference = bfTokenReference
-                    }
-                );
-            }
+                TransactionId = bfTransactionId,
+                Total = processPaymentRequest.OrderTotal.ToString(),
+                Currency = currency.CurrencyCode,
+                BfTokenReference = bfTokenReference,
+                Description = productAttributes_string,
+            };
 
-            await _gateway.LogDebug(
-                "Triggered ProcessPaymentAsync bfTokenReference: " + bfTokenReference,
-                "Transaction Res Metadata: " + JsonConvert.SerializeObject(transaction_res.Metadata)
-                );
+            transaction_res = await _gateway.ProcessACHSale(transaction);
+            // processPaymentRequest.CustomValues.Add("Bluefin Payment Type", "ACH");
 
-            processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
 
-            // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
-
-            // Consider doing the same for else of transaction_res.IsSuccess. However, that may pose challenges if they retry the transaction during the same checkout session.
+            if (transaction_res.IsSuccess)
             {
-                // TODO: Proper Delete. However, this suffices
-                await _genericAttributeService.SaveAttributeAsync<string>(
-                    nop_customer,
-                    "bfTokenReference",
-                    (string)null, // NOTE: Casting to string is required at compilation time
-                    nop_store.Id
-                );
-
-                await _genericAttributeService.SaveAttributeAsync<string>(
-                    nop_customer,
-                    "bfTransactionId",
-                    (string)null, // NOTE: Casting to string is required at compilation time
-                    nop_store.Id
-                );
-
-                await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
 
                 await _gateway.LogDebug(
-                    "Generic attribute cleanup",
-                    await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
-                );
-            }
+                    "Triggered ProcessPaymentAsync bfTokenReference: " + bfTokenReference,
+                    "Transaction ACH Res Metadata: " + JsonConvert.SerializeObject(transaction_res.Metadata)
+                    );
 
+                processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
 
-            // See: https://webiant.com/docs/nopcommerce/Libraries/Nop.Core/Domain/Payments/PaymentStatus
-            if (_bluefinPaymentSettings.UseAuthorizeOnly)
-            {
-                processPaymentResult.NewPaymentStatus = PaymentStatus.Authorized;
+                // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
+
+                // Consider doing the same for else of transaction_res.IsSuccess. However, that may pose challenges if they retry the transaction during the same checkout session.
+                {
+                    // TODO: Proper Delete. However, this suffices
+                    await _genericAttributeService.SaveAttributeAsync<string>(
+                        nop_customer,
+                        "paymentType",
+                        (string)null, // NOTE: Casting to string is required at compilation time
+                        nop_store.Id
+                    );
+
+                    await _genericAttributeService.SaveAttributeAsync<string>(
+                        nop_customer,
+                        "bfTokenReference",
+                        (string)null, // NOTE: Casting to string is required at compilation time
+                        nop_store.Id
+                    );
+
+                    await _genericAttributeService.SaveAttributeAsync<string>(
+                        nop_customer,
+                        "bfTransactionId",
+                        (string)null, // NOTE: Casting to string is required at compilation time
+                        nop_store.Id
+                    );
+
+                    await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
+
+                    await _gateway.LogDebug(
+                        "Generic attribute cleanup",
+                        await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
+                    );
+                }
+
+                // See: https://webiant.com/docs/nopcommerce/Libraries/Nop.Core/Domain/Payments/PaymentStatus
+                processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
             }
             else
             {
-                processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
+                processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
+
+                string err_message = JsonConvert.SerializeObject(transaction_res.Metadata);
+                // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
+                processPaymentResult.AddError(err_message);
             }
         }
         else
         {
-            processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
+            var transaction = new Transaction
+            {
+                TransactionId = bfTransactionId,
+                Total = processPaymentRequest.OrderTotal.ToString(),
+                Currency = currency.CurrencyCode,
+                BfTokenReference = bfTokenReference,
+                Description = productAttributes_string,
+            };
 
-            string err_message = JsonConvert.SerializeObject(transaction_res.Metadata);
-            // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
-            processPaymentResult.AddError(err_message);
+
+            if (_bluefinPaymentSettings.UseAuthorizeOnly)
+            {
+                transaction_res = await _gateway.ProcessAuthorization(transaction);
+                // processPaymentRequest.CustomValues.Add("Bluefin Transaction Type", "Authorization");
+            }
+            else
+            {
+                transaction_res = await _gateway.ProcessSale(transaction);
+                // processPaymentRequest.CustomValues.Add("Bluefin Transaction Type", "Sale");
+            }
+
+
+            if (transaction_res.IsSuccess)
+            {
+                if (StoreBluefinToken
+                    && IsTokenVaulated(transaction_res))
+                {
+                    await _bluefinTokenRepositoryService.InsertAsync(
+                        new BluefinTokenEntry
+                        {
+                            CustomerId = nop_customer.Id,
+                            BfTokenReference = bfTokenReference
+                        }
+                    );
+                }
+
+                await _gateway.LogDebug(
+                    "Triggered ProcessPaymentAsync bfTokenReference: " + bfTokenReference,
+                    "Transaction Res Metadata: " + JsonConvert.SerializeObject(transaction_res.Metadata)
+                    );
+
+                processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
+
+                // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
+
+                // Consider doing the same for else of transaction_res.IsSuccess. However, that may pose challenges if they retry the transaction during the same checkout session.
+                {
+                    // TODO: Proper Delete. However, this suffices
+                    await _genericAttributeService.SaveAttributeAsync<string>(
+                        nop_customer,
+                        "paymentType",
+                        (string)null, // NOTE: Casting to string is required at compilation time
+                        nop_store.Id
+                    );
+
+                    await _genericAttributeService.SaveAttributeAsync<string>(
+                        nop_customer,
+                        "bfTokenReference",
+                        (string)null, // NOTE: Casting to string is required at compilation time
+                        nop_store.Id
+                    );
+
+                    await _genericAttributeService.SaveAttributeAsync<string>(
+                        nop_customer,
+                        "bfTransactionId",
+                        (string)null, // NOTE: Casting to string is required at compilation time
+                        nop_store.Id
+                    );
+
+                    await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
+
+                    await _gateway.LogDebug(
+                        "Generic attribute cleanup",
+                        await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
+                    );
+                }
+
+
+                // See: https://webiant.com/docs/nopcommerce/Libraries/Nop.Core/Domain/Payments/PaymentStatus
+                if (_bluefinPaymentSettings.UseAuthorizeOnly)
+                {
+                    processPaymentResult.NewPaymentStatus = PaymentStatus.Authorized;
+                }
+                else
+                {
+                    processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
+                }
+            }
+            else
+            {
+                processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
+
+                string err_message = JsonConvert.SerializeObject(transaction_res.Metadata);
+                // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
+                processPaymentResult.AddError(err_message);
+            }
         }
 
         return processPaymentResult;
@@ -462,34 +546,70 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         }
         */
 
+        string bfPaymentType = Utility.ParseBfPaymentType(_gateway, refundPaymentRequest.Order.CustomValuesXml);
+
         string bfTransactionId = Utility.ParseBfTransactionId(_gateway, refundPaymentRequest.Order.CustomValuesXml);
 
-        var refund_transaction = new RefundTransaction
+        if (bfPaymentType == "ACH")
         {
-            TransactionId = bfTransactionId,
-            AmountToRefund = amount,
-            Currency = refundPaymentRequest.Order.CustomerCurrencyCode
-        };
+            var refund_transaction = new RefundTransaction
+            {
+                TransactionId = bfTransactionId,
+                AmountToRefund = amount,
+                Currency = refundPaymentRequest.Order.CustomerCurrencyCode
+            };
 
-        var refunded_res = await _gateway.ProcessRefund(refund_transaction);
+            var refunded_res = await _gateway.ProcessACHRefund(refund_transaction);
 
-        if (refunded_res.IsSuccess)
-        {
-            _notificationService.SuccessNotification("Refunded Transaction #"
-                + bfTransactionId + " with the amount of: "
-                + amount
-                + " " + refund_transaction.Currency
-                );
-            refundResult.NewPaymentStatus = refundPaymentRequest.IsPartialRefund ? PaymentStatus.PartiallyRefunded : PaymentStatus.Refunded;
+            if (refunded_res.IsSuccess)
+            {
+                _notificationService.SuccessNotification("Refunded ACH Transaction #"
+                    + bfTransactionId + " with the amount of: "
+                    + amount
+                    + " " + refund_transaction.Currency
+                    );
+                refundResult.NewPaymentStatus = refundPaymentRequest.IsPartialRefund ? PaymentStatus.PartiallyRefunded : PaymentStatus.Refunded;
+            }
+            else
+            {
+                string err_message = "There has been an error while refunding the transaction: "
+                    + JsonConvert.SerializeObject(refunded_res.Metadata);
+
+                _notificationService.ErrorNotification(err_message);
+
+                refundResult.AddError(err_message);
+            }
         }
         else
         {
-            string err_message = "There has been an error while refunding the transaction: "
-                + JsonConvert.SerializeObject(refunded_res.Metadata);
+            var refund_transaction = new RefundTransaction
+            {
+                TransactionId = bfTransactionId,
+                AmountToRefund = amount,
+                Currency = refundPaymentRequest.Order.CustomerCurrencyCode
+            };
 
-            _notificationService.ErrorNotification(err_message);
+            var refunded_res = await _gateway.ProcessRefund(refund_transaction);
 
-            refundResult.AddError(err_message);
+            if (refunded_res.IsSuccess)
+            {
+                _notificationService.SuccessNotification("Refunded Transaction #"
+                    + bfTransactionId + " with the amount of: "
+                    + amount
+                    + " " + refund_transaction.Currency
+                    );
+                refundResult.NewPaymentStatus = refundPaymentRequest.IsPartialRefund ? PaymentStatus.PartiallyRefunded : PaymentStatus.Refunded;
+            }
+            else
+            {
+                string err_message = "There has been an error while refunding the transaction: "
+                    + JsonConvert.SerializeObject(refunded_res.Metadata);
+
+                _notificationService.ErrorNotification(err_message);
+
+                refundResult.AddError(err_message);
+            }
+
         }
 
         return refundResult;

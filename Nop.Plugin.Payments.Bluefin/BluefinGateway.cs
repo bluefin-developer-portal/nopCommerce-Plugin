@@ -175,10 +175,57 @@ public class Utility
             bfTransactionId = jsonParsed.DictionarySerializer.item.value;
         }
 
-
-
         return bfTransactionId;
     }
+
+    static public string ParseBfPaymentType(BluefinGateway gateway, string CustomValuesXml)
+    {
+
+        XmlDocument doc = new XmlDocument();
+        doc.LoadXml(CustomValuesXml);
+        string jsonText = JsonConvert.SerializeXmlNode(doc);
+
+        /*
+        gateway.LogDebug(
+            "ParseBfTransactionId",
+            "jsonText:" + jsonText
+        ).Wait();
+        */
+
+        string bfPaymentType= "";
+
+        try
+        {
+            var definition = new
+            {
+                DictionarySerializer = new
+                {
+                    item = new List<Dictionary<string, string>>()
+                }
+            };
+
+            var jsonParsed = JsonConvert.DeserializeAnonymousType(jsonText, definition);
+
+            int bfpaymenttype_inx = jsonParsed.DictionarySerializer.item.FindIndex(pair =>
+                    pair["key"] == "Bluefin Payment Type");
+
+            if (bfpaymenttype_inx != -1)
+            {
+                bfPaymentType = jsonParsed.DictionarySerializer.item[bfpaymenttype_inx]["value"];
+            }
+
+        }
+        catch (JsonSerializationException) // NOTE: Ensure Backwards compatibility with the old version that was used to make payments.
+        {
+            var definition = new { DictionarySerializer = new { item = new { key = "", value = "" } } };
+            var jsonParsed = JsonConvert.DeserializeAnonymousType(jsonText, definition);
+
+            bfPaymentType = jsonParsed.DictionarySerializer.item.value;
+        }
+
+        return bfPaymentType;
+    }
+
 }
 
 public class BluefinLogger(ILogger logger, bool enabled)
@@ -286,7 +333,7 @@ public class BluefinGateway : BluefinLogger
         if (response != null)
         {
             var jsonString = await response.Content.ReadAsStringAsync();
-            
+
             dynamic output = JsonConvert.DeserializeObject<object>(jsonString);
 
             if (!response.IsSuccessStatusCode)
@@ -296,7 +343,7 @@ public class BluefinGateway : BluefinLogger
                     source,
                     "Request: " + JsonConvert.SerializeObject(request) + ", " + "Response " + jsonString
                 );
-                
+
                 await _traceLogsRepositoryService.InsertAsync(
                     new TraceIdEntry
                     {
@@ -380,10 +427,14 @@ public class BluefinGateway : BluefinLogger
 
         // Build allowedPaymentMethods from individual booleans
         var allowedPaymentMethods = new List<string>(); // NOTE: DISABLE FOR NOW bfTokenReferences,
-        if (_bluefinPaymentSettings.EnableCard) allowedPaymentMethods.Add("CARD");
-        if (_bluefinPaymentSettings.EnableACH) allowedPaymentMethods.Add("ACH");
-        if (_bluefinPaymentSettings.EnableGooglePay) allowedPaymentMethods.Add("GOOGLE_PAY");
-        if (_bluefinPaymentSettings.EnableClickToPay) allowedPaymentMethods.Add("CLICK_TO_PAY");
+        if (_bluefinPaymentSettings.EnableCard)
+            allowedPaymentMethods.Add("CARD");
+        if (_bluefinPaymentSettings.EnableACH)
+            allowedPaymentMethods.Add("ACH");
+        if (_bluefinPaymentSettings.EnableGooglePay)
+            allowedPaymentMethods.Add("GOOGLE_PAY");
+        if (_bluefinPaymentSettings.EnableClickToPay)
+            allowedPaymentMethods.Add("CLICK_TO_PAY");
         request.allowedPaymentMethods = allowedPaymentMethods;
 
         request.customer = new ExpandoObject();
@@ -592,8 +643,9 @@ public class BluefinGateway : BluefinLogger
                 total = transaction.AmountToRefund,
                 currency = transaction.Currency
             },
-            trace = new {
-              source = "nopCommerce Plugin"
+            trace = new
+            {
+                source = "nopCommerce Plugin"
             }
         };
 
@@ -690,4 +742,78 @@ public class BluefinGateway : BluefinLogger
         return await HandleTransactionRequest(requestMessage, request, "BluefinGateway.processSale ERROR");
 
     }
+
+    public async Task<TransactionResponse> ProcessACHSale(Transaction transaction)
+    {
+        string accountId = _bluefinPaymentSettings.AccountId;
+
+        string URI = "/api/v4/accounts/" +
+                    accountId + "/ach/sale";
+        var request = new
+        {
+            transactionId = transaction.TransactionId,
+            description = string.IsNullOrEmpty(transaction.Description) ? "" : transaction.Description,
+            amounts = new
+            {
+                total = transaction.Total,
+                currency = transaction.Currency
+            },
+            trace = new
+            {
+                source = "nopCommerce Plugin"
+            },
+            bfTokenReference = transaction.BfTokenReference
+        };
+
+        HttpRequestMessage requestMessage = null;
+
+        var serializedBody = JsonConvert.SerializeObject(request);
+
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
+        {
+            Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
+        };
+
+        InjectHeaders(requestMessage, URI, serializedBody);
+
+        return await HandleTransactionRequest(requestMessage, request, "BluefinGateway.processSale ERROR");
+
+    }
+
+    public async Task<TransactionResponse> ProcessACHRefund(RefundTransaction transaction)
+    {
+        string accountId = _bluefinPaymentSettings.AccountId;
+
+        string URI = "/api/v4/accounts/" +
+                    accountId + "/ach/" + transaction.TransactionId + "/refund";
+
+        var request = new
+        {
+            amounts = new
+            {
+                total = transaction.AmountToRefund,
+                currency = transaction.Currency
+            },
+            trace = new
+            {
+                source = "nopCommerce Plugin"
+            }
+        };
+
+        HttpRequestMessage requestMessage = null;
+
+        var serializedBody = JsonConvert.SerializeObject(request);
+
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
+        {
+            Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
+        };
+
+        InjectHeaders(requestMessage, URI, serializedBody);
+
+        return await HandleTransactionRequest(requestMessage, request, "BluefinGateway.processRefund ERROR");
+
+    }
+    
+
 }
