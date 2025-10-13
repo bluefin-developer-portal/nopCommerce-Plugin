@@ -538,7 +538,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         );
 
         TransactionResponse transaction_res = await _gateway.CaptureAuthorization(bfTransactionId);
-
+        
         if (transaction_res.IsSuccess)
         {
             // See https://webiant.com/docs/nopcommerce/Libraries/Nop.Services/Messages/INotificationService
@@ -548,13 +548,15 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         }
         else
         {
+            // TODO: (metadata.status == "DECLINED") { "Transaction has been declined" }
+
             string err_message = "There has been an error while capturing the transaction: "
                             + new StringContent(JsonConvert.SerializeObject(transaction_res.Metadata));
             _notificationService.ErrorNotification(err_message);
 
             capturePaymentResult.AddError(err_message);
 
-            // capturePaymentResult.NewPaymentStatus = PaymentStatus.Pending; // Still Authorized or Pending in this case
+            // capturePaymentResult.NewPaymentStatus = PaymentStatus.Pending; // Note still Authorized or Pending in this case
         }
 
         return capturePaymentResult;
