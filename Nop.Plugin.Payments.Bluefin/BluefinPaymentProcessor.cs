@@ -360,7 +360,24 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
 
-                string err_message = JsonConvert.SerializeObject(transaction_res.Metadata);
+                dynamic metadata = transaction_res.Metadata;
+
+                string err_message;
+
+                if (metadata.status == "DECLINED")
+                {
+                    string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
+                    err_message = "Transaction #" + metadata.transactionId + " has been declined: " + processorMessage;
+                }
+                else if (metadata.status == "FAILED")
+                {
+                    string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
+                    err_message = "Transaction #" + metadata.transactionId + " has failed: " + processorMessage;
+                }
+                else
+                {
+                    err_message = JsonConvert.SerializeObject(metadata);
+                }
                 // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
                 processPaymentResult.AddError(err_message);
             }
@@ -459,7 +476,25 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
 
-                string err_message = JsonConvert.SerializeObject(transaction_res.Metadata);
+                dynamic metadata = transaction_res.Metadata;
+
+                string err_message;
+
+                // Note that the declined status is treated as a failed transaction (4xx response status) meaning we don't check whether the token was vauled for reuse for the Checkout Component (saved card)
+                if (metadata.status == "DECLINED")
+                {
+                    string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
+                    err_message = "Transaction #" + metadata.transactionId + " has been declined: " + processorMessage;
+                }
+                else if (metadata.status == "FAILED")
+                {
+                    string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
+                    err_message = "Transaction #" + metadata.transactionId + " has failed: " + processorMessage;
+                }
+                else
+                {
+                    err_message = JsonConvert.SerializeObject(metadata);
+                }
                 // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
                 processPaymentResult.AddError(err_message);
             }

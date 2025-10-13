@@ -397,8 +397,20 @@ public class BluefinGateway : BluefinLogger
                 return transaction_res;
             }
 
-            transaction_res.Metadata = JsonConvert.DeserializeObject<object>(jsonString);
-            transaction_res.IsSuccess = true;
+            dynamic metadata = JsonConvert.DeserializeObject<object>(jsonString);
+
+            transaction_res.Metadata = metadata;
+
+            // Note that the declined status is treated as a failed transaction (4xx response status) meaning we don't check whether the token was vauled for reuse for the Checkout Component (saved card)
+            if (metadata.status == "DECLINED" || metadata.status == "FAILED")
+            {
+                transaction_res.IsSuccess = false;
+            }
+            else
+            {
+                transaction_res.IsSuccess = true;
+            }
+            
 
             return transaction_res;
         }
