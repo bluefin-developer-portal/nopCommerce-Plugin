@@ -248,7 +248,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             "Transaction Metadata: "
         );
 
-        
+
 
         string productAttributes_string = "";
 
@@ -280,7 +280,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         await _gateway.LogDebug("productAttributes_string: ", productAttributes_string);
         */
 
-        
+
 
         string paymentType = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "paymentType", nop_store.Id);
 
@@ -483,17 +483,29 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 // Note that the declined status is treated as a failed transaction (4xx response status) meaning we don't check whether the token was vauled for reuse for the Checkout Component (saved card)
                 if (metadata.status == "DECLINED")
                 {
+                    string resource_message = await GetPluginResourceAsync("Plugins.Payments.Bluefin.Error.PaymentDeclined");
                     string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
-                    err_message = "Transaction #" + metadata.transactionId + " has been declined: " + processorMessage;
+
+                    err_message = string.IsNullOrEmpty(resource_message) ?
+                        "Transaction #" + metadata.transactionId + " has been declined: " + processorMessage
+                        : resource_message;
                 }
                 else if (metadata.status == "FAILED")
                 {
+                    string resource_message = await GetPluginResourceAsync("Plugins.Payments.Bluefin.Error.PaymentFailed");
                     string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
-                    err_message = "Transaction #" + metadata.transactionId + " has failed: " + processorMessage;
+
+                    err_message = string.IsNullOrEmpty(resource_message) ?
+                        "Transaction #" + metadata.transactionId + " has failed: " + processorMessage
+                        : resource_message;
                 }
                 else
                 {
-                    err_message = JsonConvert.SerializeObject(metadata);
+                    string resource_message = await GetPluginResourceAsync("Plugins.Payments.Bluefin.Error.Other");
+
+                    err_message = string.IsNullOrEmpty(resource_message) ?
+                        JsonConvert.SerializeObject(metadata)
+                        : resource_message;
                 }
                 // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
                 processPaymentResult.AddError(err_message);
@@ -501,6 +513,20 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         }
 
         return processPaymentResult;
+    }
+    
+    public async Task<string> GetPluginResourceAsync(string resource_key)
+    {
+        var working_language = await _workContext.GetWorkingLanguageAsync();
+        string resource_message = await _localizationService.GetResourceAsync(
+                    resource_key,
+                    working_language.Id,
+                    false,
+                    "",
+                    true);
+
+        return resource_message;
+
     }
 
     public Task PostProcessPaymentAsync(PostProcessPaymentRequest postProcessPaymentRequest)
