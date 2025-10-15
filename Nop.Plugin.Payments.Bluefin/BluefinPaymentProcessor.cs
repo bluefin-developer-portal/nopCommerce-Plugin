@@ -366,17 +366,29 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
                 if (metadata.status == "DECLINED")
                 {
+                    string resource_message = await GetPluginResourceAsync("Plugins.Payments.Bluefin.Error.PaymentDeclined");
                     string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
-                    err_message = "Transaction #" + metadata.transactionId + " has been declined: " + processorMessage;
+
+                    err_message = string.IsNullOrEmpty(resource_message) ?
+                        "Transaction #" + metadata.transactionId + " has been declined: " + processorMessage
+                        : resource_message;
                 }
                 else if (metadata.status == "FAILED")
                 {
+                    string resource_message = await GetPluginResourceAsync("Plugins.Payments.Bluefin.Error.PaymentFailed");
                     string processorMessage = string.IsNullOrEmpty((string)metadata.auth.processorMessage) ? "" : metadata.auth.processorMessage;
-                    err_message = "Transaction #" + metadata.transactionId + " has failed: " + processorMessage;
+
+                    err_message = string.IsNullOrEmpty(resource_message) ?
+                        "Transaction #" + metadata.transactionId + " has failed: " + processorMessage
+                        : resource_message;
                 }
                 else
                 {
-                    err_message = JsonConvert.SerializeObject(metadata);
+                    string resource_message = await GetPluginResourceAsync("Plugins.Payments.Bluefin.Error.Other");
+
+                    err_message = string.IsNullOrEmpty(resource_message) ?
+                        JsonConvert.SerializeObject(metadata)
+                        : resource_message;
                 }
                 // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
                 processPaymentResult.AddError(err_message);
