@@ -306,6 +306,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 Currency = currency.CurrencyCode,
                 BfTokenReference = bfTokenReference,
                 Description = productAttributes_string,
+                CustomId = orderGuid,
             };
 
             transaction_res = await _gateway.ProcessACHSale(transaction);
@@ -406,6 +407,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 Currency = currency.CurrencyCode,
                 BfTokenReference = bfTokenReference,
                 Description = productAttributes_string,
+                CustomId = orderGuid,
             };
 
 
@@ -617,6 +619,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         var refundResult = new RefundPaymentResult();
         var amount = refundPaymentRequest.AmountToRefund.ToString("0.00");
 
+        var orderGuid = refundPaymentRequest.Order.OrderGuid.ToString();
+
         await _gateway.LogDebug(
             "Triggered RefundAsync amount: " + amount,
             "Transaction Res Metadata: "
@@ -643,7 +647,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 TransactionId = bfTransactionId,
                 AmountToRefund = amount,
-                Currency = refundPaymentRequest.Order.CustomerCurrencyCode
+                Currency = refundPaymentRequest.Order.CustomerCurrencyCode,
+                CustomId = orderGuid,
             };
 
             var refunded_res = await _gateway.ProcessACHRefund(refund_transaction);
@@ -673,7 +678,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 TransactionId = bfTransactionId,
                 AmountToRefund = amount,
-                Currency = refundPaymentRequest.Order.CustomerCurrencyCode
+                Currency = refundPaymentRequest.Order.CustomerCurrencyCode,
+                CustomId = orderGuid,
             };
 
             var refunded_res = await _gateway.ProcessRefund(refund_transaction);

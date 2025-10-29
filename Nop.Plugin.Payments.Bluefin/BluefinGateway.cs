@@ -64,6 +64,8 @@ public class Transaction
     public string BfTokenReference { get; set; }
 
     public string Description { get; set; }
+
+    public string? CustomId { get; set; }
 }
 
 public class TransactionResponse
@@ -78,6 +80,8 @@ public class RefundTransaction
     public string AmountToRefund { get; set; }
 
     public string Currency { get; set; }
+    
+    public string? CustomId { get; set; }
 }
 
 public class Utility
@@ -657,7 +661,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             }
         };
 
@@ -695,7 +700,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
@@ -734,7 +740,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
@@ -772,7 +779,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             },
             bfTokenReference = transaction.BfTokenReference
         };
@@ -808,7 +816,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             }
         };
 

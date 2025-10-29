@@ -165,16 +165,29 @@ public class PaymentBluefinController : BasePaymentController
     // [HttpPost]
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.System.MANAGE_SYSTEM_LOG)]
-    public async Task<IActionResult> TraceLogList()
+    public async Task<IActionResult> TraceLogList(TraceSearchModel _searchModel)
     {
 
+        // TODO: Refactor and optimize via query parameters for paged list with TraceSearchModel
         var _list = await _traceLogsRepositoryService.GetAllLogs();
+
+        var __list = new List<TraceLogModel>();
 
         // TODO: Refactor to sort via query. This is inefficient
         var _sorted = new List<TraceIdEntry>(_list);
 
         // Descending
         _sorted.Sort((x,y) => y.Created.CompareTo(x.Created));
+
+        foreach(var item in _sorted) {
+            __list.Add(new TraceLogModel{
+                Id = item.Id,
+                TraceId = item.TraceId,
+                ErrorMessage = item.ErrorMessage,
+                Json = item.Json,
+                Created = item.Created
+            });
+        }
 
         /*
         var _list = new List<TraceLogModel>
@@ -197,19 +210,22 @@ public class PaymentBluefinController : BasePaymentController
         */
 
 
-        /*
         // NOTE: Keep this commment if the functionality like this is needed down the line
+        /*
         var searchModel = new TraceSearchModel
         {
             // TraceId = "A",
             // ErrorMessage = "B"
             Draw = "1"
         };
+        */
 
-        var logItems = new PagedList<TraceLogModel>(_list, 0, 10);
+        // Note: Page => (Start / Length) + 1; and PageSize => Length;
+        var logItems = new PagedList<TraceLogModel>(__list, _searchModel.Page - 1, _searchModel.PageSize);
+
         // logItems.ToPagedList();
 
-        var model = await new TraceLogsListModel().PrepareToGridAsync(searchModel, logItems, () =>
+        var model = await new TraceLogsListModel().PrepareToGridAsync(_searchModel, logItems, () =>
         {
             //fill in model values from the entity
             return logItems.SelectAwait(async logItem =>
@@ -219,8 +235,8 @@ public class PaymentBluefinController : BasePaymentController
                 return logItem;
             });
         });
-        */
 
+        /*
         return Json(new
         {
             Data = _sorted,
@@ -229,8 +245,9 @@ public class PaymentBluefinController : BasePaymentController
             recordsTotal = _list.Count,
             CustomProperties = new { }
         });
+        */
 
-        // return Json(model);
+        return Json(model);
 
         // return Json(new
         // {
@@ -254,15 +271,18 @@ public class PaymentBluefinController : BasePaymentController
     [HttpPost]
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.Orders.ORDERS_VIEW)]
-    public async Task<IActionResult> OrderList() // (OrderSearchModel searchModel)
+    public async Task<IActionResult> OrderList(OrderSearchModel _searchModel)
     {
         //prepare model
 
+        /*
         var searchModel = new OrderSearchModel{
-            Draw = "1"
+            Draw = "1",
+            // Page = _searchModel.Page,
         };
+        */
 
-        var model = await _orderModelFactory.PrepareOrderListModelAsync(searchModel);
+        var model = await _orderModelFactory.PrepareOrderListModelAsync(_searchModel);
 
         return Json(model);
     }
@@ -403,6 +423,44 @@ public class PaymentBluefinController : BasePaymentController
         new_order.CustomOrderNumber = _customNumberFormatter.GenerateOrderCustomNumber(new_order);
         await _orderService.UpdateOrderAsync(new_order);
 
+        var orderItems = await _orderService.GetOrderItemsAsync(order.Id);
+
+        foreach(var orderItem in orderItems) {
+            var newOrderItem = new OrderItem
+            {
+                OrderItemGuid = Guid.NewGuid(),
+                OrderId = new_order.Id,
+                ProductId = orderItem.Id,
+                UnitPriceInclTax = orderItem.UnitPriceInclTax,
+                UnitPriceExclTax = orderItem.UnitPriceExclTax,
+                PriceInclTax = orderItem.PriceInclTax,
+                PriceExclTax = orderItem.PriceExclTax,
+                OriginalProductCost = orderItem.OriginalProductCost,
+                AttributeDescription = orderItem.AttributeDescription,
+                AttributesXml = orderItem.AttributesXml,
+                Quantity = orderItem.Quantity,
+                DiscountAmountInclTax = orderItem.DiscountAmountInclTax,
+                DiscountAmountExclTax = orderItem.DiscountAmountExclTax,
+                DownloadCount = orderItem.DownloadCount,
+                IsDownloadActivated = orderItem.IsDownloadActivated,
+                LicenseDownloadId = orderItem.LicenseDownloadId,
+                ItemWeight = orderItem.ItemWeight,
+                RentalStartDateUtc = orderItem.RentalStartDateUtc,
+                RentalEndDateUtc = orderItem.RentalEndDateUtc
+            };
+
+            await _orderService.InsertOrderItemAsync(newOrderItem);
+        }
+
+        // Add a note
+        await _orderService.InsertOrderNoteAsync(new OrderNote
+        {
+            OrderId = new_order.Id,
+            Note = "The order " + order.OrderGuid.ToString() + " has been reissued as order " + new_order.OrderGuid.ToString(),
+            DisplayToCustomer = false,
+            CreatedOnUtc = DateTime.UtcNow
+        });
+
 /*
        if (model.PickupAddress != null)
         {
@@ -442,7 +500,7 @@ public class PaymentBluefinController : BasePaymentController
     [HttpPost, ActionName("Edit")]
     [FormValueRequired("reissueorder")]
     [CheckPermission(StandardPermission.Orders.ORDERS_CREATE_EDIT_DELETE)]
-    public async Task<IActionResult> ReissueOrder(int id) {
+    public async Task<IActionResult> ReissueOrder(int id, OrderModel order_model) {
 
         // _notificationService.ErrorNotification("At least one payment method must be selected." + id.ToString());
         // _notificationService.SuccessNotification(); // await _localizationService.GetResourceAsync("Admin.Plugins.Saved")
@@ -453,7 +511,7 @@ public class PaymentBluefinController : BasePaymentController
 
         ReissueOrderEntry reissue_entry = await _reissueOrdersRepositoryService.GetBfTokenByOrderGuid(order.OrderGuid.ToString());
 
-        // var new_order = await insertOrder(id, model);
+        var new_order = await insertOrder(id, model);
 
         if(reissue_entry != null) {
             _notificationService.SuccessNotification("Reissued order created with ID: " + reissue_entry.BfTokenReference + " for guid: " + reissue_entry.OrderGuid);
