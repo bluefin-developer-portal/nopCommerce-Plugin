@@ -511,7 +511,7 @@ public class PaymentBluefinController : BasePaymentController
 
         ReissueOrderEntry reissue_entry = await _reissueOrdersRepositoryService.GetBfTokenByOrderGuid(order.OrderGuid.ToString());
 
-        // var new_order = await insertOrder(id, model);
+        var new_order = await insertOrder(id, model);
 
         if(reissue_entry != null) {
             _notificationService.SuccessNotification("Reissued order created with ID: " + reissue_entry.BfTokenReference + " for guid: " + reissue_entry.OrderGuid);

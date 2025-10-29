@@ -65,7 +65,9 @@ public class Transaction
 
     public string Description { get; set; }
 
+    #nullable enable
     public string? CustomId { get; set; }
+    #nullable disable
 }
 
 public class TransactionResponse
@@ -80,8 +82,10 @@ public class RefundTransaction
     public string AmountToRefund { get; set; }
 
     public string Currency { get; set; }
-    
+
+    #nullable enable
     public string? CustomId { get; set; }
+    #nullable disable
 }
 
 public class Utility
