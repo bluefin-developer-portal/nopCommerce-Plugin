@@ -25,6 +25,7 @@ public class NopStartup : INopStartup
     {
         services.AddScoped<BluefinTokenRepositoryService>();
         services.AddScoped<TraceLogsRepositoryService>();
+        services.AddScoped<ReissueOrdersRepositoryService>();
         // Client to request Bluefin services
         // services.AddHttpClient<BluefinHttpClient>().WithProxy();
     }

@@ -1,0 +1,90 @@
+@model OrderSearchModel
+
+@{
+    // ViewBag.PageTitle = "Bluefin Trace Logs";
+
+    Layout = "_AdminLayout";
+}
+
+
+<div class="content-header clearfix">
+    <h1 class="float-left">
+        Bluefin Reissue Orders
+    </h1>
+</div>
+
+<div class="card card-default">
+    <div class="card-body">
+
+        @await Html.PartialAsync("Table", new DataTablesModel
+        {
+            Name = "orders-grid",
+            UrlRead = new DataUrl("OrderList", "PaymentBluefin", null),
+            // SearchButtonId = "search-log",
+            Paging = false,
+            // Filters = new List<FilterParameter>
+            //    {
+                // new FilterParameter("CreatedOnFrom"),
+                // new FilterParameter(nameof(Model.CreatedOnTo)),
+                // new FilterParameter(nameof(Model.Message)),
+                // new FilterParameter(nameof(Model.LogLevelId))
+            //    },
+            ColumnCollection = new List<ColumnProperty>
+                {
+                    new ColumnProperty(nameof(OrderModel.CustomOrderNumber))
+                    {
+                        // IsMasterCheckBox = true,
+                        // Render = new RenderCheckBox("checkbox_log"),
+                        ClassName = NopColumnClassDefaults.CenterAll,
+                        Title = "Order #",
+                        Width = "80"
+                    },
+                    new ColumnProperty(nameof(OrderModel.OrderStatus))
+                    {
+                        // Title = T("Admin.Orders.Fields.OrderStatus").Text,
+                        Title = "Order Status", // T("Admin.System.Log.Fields.LogLevel").Text,
+                        Width = "100",
+                        Render = new RenderCustom("renderColumnOrderStatus")
+                    },
+
+                    /*
+                    new ColumnProperty(nameof(OrderModel.OrderGuid))
+                    {
+                        Title = "Order Guid", // T("Admin.System.Log.Fields.LogLevel").Text,
+                        Width = "100"
+                    },
+                    */
+                    
+                    new ColumnProperty(nameof(OrderModel.Id))
+                    {
+                        Title = "View", // T("Admin.Common.View").Text,
+                        Width = "50",
+                        ClassName =  NopColumnClassDefaults.Button,
+                        Render = new RenderButtonView(new DataUrl("~/Admin/PaymentBluefin/ViewOrder"))
+                    }
+                    
+                }
+        })
+    </div>
+
+    <script>
+        function renderColumnOrderStatus(data, type, row, meta) {
+            var color;
+            switch (row.OrderStatusId) {
+                case 10:
+                    color = 'yellow';
+                    break;
+                case 20:
+                    color = 'blue';
+                    break;
+                case 30:
+                    color = 'green';
+                    break;
+                case 40:
+                    color = 'red';
+                    break;
+            }
+            return '<span class="grid-report-item ' + color + '">' + data + '</span >';
+        }
+    </script>
+</div>

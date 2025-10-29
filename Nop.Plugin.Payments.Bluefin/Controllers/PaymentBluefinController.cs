@@ -1,3 +1,8 @@
+using System.Xml;
+using System.Xml.Schema;
+using System.Xml.Serialization;
+
+
 using Microsoft.AspNetCore.Mvc;
 
 using Newtonsoft.Json;
@@ -32,7 +37,19 @@ using Nop.Web.Framework.Models.Extensions;
 
 using Nop.Web.Framework.Models;
 
-using  Nop.Web.Framework.Models.DataTables;
+using Nop.Web.Framework.Models.DataTables;
+
+
+using Nop.Web.Areas.Admin.Models.Orders;
+using Nop.Web.Areas.Admin.Factories;
+
+
+using Nop.Core.Domain.Payments;
+
+
+using Nop.Core.Domain.Orders;
+
+using Nop.Core.Domain.Catalog;
 
 
 public partial record TraceLogsListModel : BasePagedListModel<TraceLogModel>
@@ -50,6 +67,8 @@ public class PaymentBluefinController : BasePaymentController
     private readonly ISettingService _settingService;
     private readonly ILocalizationService _localizationService;
     private readonly INotificationService _notificationService;
+    protected readonly IOrderService _orderService;
+    protected readonly IOrderModelFactory _orderModelFactory;
     private readonly IOrderProcessingService _orderProcessingService;
     private readonly IGenericAttributeService _genericAttributeService;
 
@@ -57,34 +76,48 @@ public class PaymentBluefinController : BasePaymentController
     private readonly IWorkContext _workContext;
     private readonly IStoreContext _storeContext;
 
+    protected readonly IWebHelper _webHelper;
+    protected readonly ICustomNumberFormatter _customNumberFormatter;
+
     private readonly BluefinGateway _gateway;
 
     private readonly BluefinTokenRepositoryService _bluefinTokenRepositoryService;
     private readonly TraceLogsRepositoryService _traceLogsRepositoryService;
+    private readonly ReissueOrdersRepositoryService _reissueOrdersRepositoryService;
 
     public PaymentBluefinController(ILogger logger,
         ISettingService settingService,
         ILocalizationService localizationService,
         INotificationService notificationService,
+        IOrderService orderService,
+        IOrderModelFactory orderModelFactory,
         IOrderProcessingService orderProcessingService,
         IGenericAttributeService genericAttributeService,
         BluefinPaymentSettings bluefinPaymentSettings,
         BluefinTokenRepositoryService bluefinTokenRepositoryService,
+        ReissueOrdersRepositoryService reissueOrdersRepositoryService,
         TraceLogsRepositoryService traceLogsRepositoryService,
         IWorkContext workContext,
-        IStoreContext storeContext)
+        IStoreContext storeContext,
+        ICustomNumberFormatter customNumberFormatter,
+        IWebHelper webHelper)
     {
         // _logger = logger;
         _localizationService = localizationService;
         _notificationService = notificationService;
+        _orderService = orderService;
+        _orderModelFactory = orderModelFactory;
         _settingService = settingService;
         _orderProcessingService = orderProcessingService;
         _storeContext = storeContext;
+        _customNumberFormatter = customNumberFormatter;
         _bluefinPaymentSettings = bluefinPaymentSettings;
         _genericAttributeService = genericAttributeService;
         _bluefinTokenRepositoryService = bluefinTokenRepositoryService;
+        _reissueOrdersRepositoryService = reissueOrdersRepositoryService;
         _traceLogsRepositoryService = traceLogsRepositoryService;
         _workContext = workContext;
+        _webHelper = webHelper;
         _gateway = new BluefinGateway(
             logger,
             _bluefinPaymentSettings,
@@ -208,6 +241,262 @@ public class PaymentBluefinController : BasePaymentController
 
 
     }
+
+
+    [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.Configuration.MANAGE_PAYMENT_METHODS)]
+    public IActionResult ReissueOrders() // async Task<IActionResult>
+    {
+        // var data = await _dbContext.BluefinEntries.ToListAsync();
+        return View("~/Plugins/Payments.Bluefin/Views/ReissueOrders.cshtml"); // , data);
+    }
+
+    [HttpPost]
+    [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.Orders.ORDERS_VIEW)]
+    public async Task<IActionResult> OrderList() // (OrderSearchModel searchModel)
+    {
+        //prepare model
+
+        var searchModel = new OrderSearchModel{
+            Draw = "1"
+        };
+
+        var model = await _orderModelFactory.PrepareOrderListModelAsync(searchModel);
+
+        return Json(model);
+    }
+
+    [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.System.MANAGE_SYSTEM_LOG)]
+    public async Task<IActionResult> ViewOrder(int id)
+    {
+
+        var order = await _orderService.GetOrderByIdAsync(id);
+
+        var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+
+        /*
+        var model = new TraceLogModel
+        {
+            Id = entry.Id,
+            TraceId = entry.TraceId,
+            ErrorMessage = entry.ErrorMessage,
+            Json = entry.Json,
+            Created = entry.Created
+        };
+        */
+        
+        /*
+        var log = await _logger.GetLogByIdAsync(id);
+        if (log == null)
+            return RedirectToAction("List");
+
+        //prepare model
+        var model = await _logModelFactory.PrepareLogModelAsync(null, log);
+        */
+
+        return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
+    }
+
+    public async Task<Order> insertOrder(int OrderId, OrderModel model) {
+
+        var order = await _orderService.GetOrderByIdAsync(OrderId);
+
+        var store = await _storeContext.GetCurrentStoreAsync();
+        var customer_language = await _workContext.GetWorkingLanguageAsync();
+
+        var processPaymentRequest = new ProcessPaymentRequest();
+        var processPaymentResult = new ProcessPaymentResult();
+
+        processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
+
+        // processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
+
+        processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", "123456789010");
+
+
+
+        // See: https://github.com/nopSolutions/nopCommerce/blob/release-4.80.9/src/Libraries/Nop.Services/Payments/PaymentService.cs#L372
+        var ds = new DictionarySerializer(processPaymentRequest.CustomValues);
+        var xs = new XmlSerializer(typeof(DictionarySerializer));
+        using var textWriter = new StringWriter();
+        using (var xmlWriter = XmlWriter.Create(textWriter))
+        {
+            xs.Serialize(xmlWriter, ds);
+        }
+
+        var CustomValuesXml = textWriter.ToString();
+
+        var new_order_guid = Guid.NewGuid();
+
+        var new_order = new Order{
+            StoreId = store.Id,
+            OrderGuid = new_order_guid,
+            CustomerId = order.CustomerId,
+            CustomerLanguageId = customer_language.Id,
+            CustomerTaxDisplayType = order.CustomerTaxDisplayType,
+            CustomerIp = _webHelper.GetCurrentIpAddress(),
+            OrderSubtotalInclTax = order.OrderSubtotalInclTax,
+            OrderSubtotalExclTax = order.OrderSubtotalExclTax,
+            OrderSubTotalDiscountInclTax = order.OrderSubTotalDiscountInclTax,
+            OrderSubTotalDiscountExclTax = order.OrderSubTotalDiscountExclTax,
+            OrderShippingInclTax = order.OrderShippingInclTax,
+            OrderShippingExclTax = order.OrderShippingExclTax,
+            PaymentMethodAdditionalFeeInclTax = order.PaymentMethodAdditionalFeeInclTax,
+            PaymentMethodAdditionalFeeExclTax = order.PaymentMethodAdditionalFeeExclTax,
+            TaxRates = order.TaxRates,
+            OrderTax = order.OrderTax,
+            OrderTotal = order.OrderTotal,
+            RefundedAmount = order.RefundedAmount,
+            OrderDiscount = order.OrderDiscount,
+            CheckoutAttributeDescription = order.CheckoutAttributeDescription,
+            CheckoutAttributesXml = order.CheckoutAttributesXml,
+            CustomerCurrencyCode = order.CustomerCurrencyCode,
+            CurrencyRate = order.CurrencyRate,
+            AffiliateId = order.AffiliateId,
+            OrderStatus = order.OrderStatus,
+            AllowStoringCreditCardNumber = order.AllowStoringCreditCardNumber,
+            CardType = order.CardType,
+            CardName = order.CardName,
+            CardNumber = order.CardNumber,
+            MaskedCreditCardNumber = order.MaskedCreditCardNumber,
+            CardCvv2 = order.CardCvv2,
+            CardExpirationMonth = order.CardExpirationMonth,
+            CardExpirationYear = order.CardExpirationYear,
+            PaymentMethodSystemName = order.PaymentMethodSystemName,
+            AuthorizationTransactionId = order.AuthorizationTransactionId,
+            AuthorizationTransactionCode = order.AuthorizationTransactionCode,
+            AuthorizationTransactionResult = order.AuthorizationTransactionResult,
+            CaptureTransactionId = order.CaptureTransactionId,
+            CaptureTransactionResult = order.CaptureTransactionResult,
+            SubscriptionTransactionId = order.SubscriptionTransactionId,
+            PaymentStatus = processPaymentResult.NewPaymentStatus,
+            PaidDateUtc = null,
+            PickupInStore = order.PickupInStore,
+            ShippingStatus = order.ShippingStatus,
+            ShippingMethod = order.ShippingMethod,
+            ShippingRateComputationMethodSystemName = order.ShippingRateComputationMethodSystemName,
+            CustomValuesXml = CustomValuesXml,
+            VatNumber = order.VatNumber,
+            CreatedOnUtc = DateTime.UtcNow,
+            CustomOrderNumber = string.Empty
+
+        };
+
+        if(order.BillingAddressId != null) {
+            new_order.BillingAddressId = order.BillingAddressId;
+        }
+
+        if(order.ShippingAddressId != null) {
+            new_order.ShippingAddressId = order.ShippingAddressId;
+        }
+
+        if(order.PickupAddressId != null) {
+            new_order.PickupAddressId = order.PickupAddressId;
+        }
+
+        await _orderService.InsertOrderAsync(new_order);
+
+
+        // Order.Id can be used now
+        new_order.CustomOrderNumber = _customNumberFormatter.GenerateOrderCustomNumber(new_order);
+        await _orderService.UpdateOrderAsync(new_order);
+
+/*
+       if (model.PickupAddress != null)
+        {
+            await _addressService.InsertAddressAsync(model.PickupAddress);
+            order.PickupAddressId = model.PickupAddress.Id;
+        }
+
+        if (model.ShippingAddress != null)
+        {
+            await _addressService.InsertAddressAsync(model.ShippingAddress);
+            order.ShippingAddressId = model.ShippingAddress.Id;
+        }
+        */
+
+
+        return new_order;
+
+    }
+
+    #region Edit, delete
+
+    // [HttpPost]
+    [Area(AreaNames.ADMIN)]
+    [CheckPermission(StandardPermission.Orders.ORDERS_VIEW)]
+    public virtual async Task<IActionResult> Edit(int id)
+    {
+        var order = await _orderService.GetOrderByIdAsync(id);
+
+        //prepare model
+        var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+
+        return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
+    }
+    
+
+    [Area(AreaNames.ADMIN)]
+    [HttpPost, ActionName("Edit")]
+    [FormValueRequired("reissueorder")]
+    [CheckPermission(StandardPermission.Orders.ORDERS_CREATE_EDIT_DELETE)]
+    public async Task<IActionResult> ReissueOrder(int id) {
+
+        // _notificationService.ErrorNotification("At least one payment method must be selected." + id.ToString());
+        // _notificationService.SuccessNotification(); // await _localizationService.GetResourceAsync("Admin.Plugins.Saved")
+
+        var order = await _orderService.GetOrderByIdAsync(id);
+
+        var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+
+        ReissueOrderEntry reissue_entry = await _reissueOrdersRepositoryService.GetBfTokenByOrderGuid(order.OrderGuid.ToString());
+
+        // var new_order = await insertOrder(id, model);
+
+        if(reissue_entry != null) {
+            _notificationService.SuccessNotification("Reissued order created with ID: " + reissue_entry.BfTokenReference + " for guid: " + reissue_entry.OrderGuid);
+        } else {
+            _notificationService.ErrorNotification("Order is not able to be reissued.");
+        }
+
+
+        /*
+                    await _reissueOrdersRepositoryService.InsertAsync(
+                new ReissueOrderEntry
+                {
+                    OrderGuid = orderGuid,
+                    BfTokenReference = bfTokenReference
+                }
+            );
+        */
+
+        
+
+        /*
+        var model = new TraceLogModel
+        {
+            Id = entry.Id,
+            TraceId = entry.TraceId,
+            ErrorMessage = entry.ErrorMessage,
+            Json = entry.Json,
+            Created = entry.Created
+        };
+        */
+        
+        /*
+        var log = await _logger.GetLogByIdAsync(id);
+        if (log == null)
+            return RedirectToAction("List");
+
+        //prepare model
+        var model = await _logModelFactory.PrepareLogModelAsync(null, log);
+        */
+
+        return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
+    }
+    #endregion
 
 
     [Area(AreaNames.ADMIN)]

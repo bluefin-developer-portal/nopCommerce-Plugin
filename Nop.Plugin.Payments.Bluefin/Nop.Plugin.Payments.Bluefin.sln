@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nop.Plugin.Payments.Bluefin", "Nop.Plugin.Payments.Bluefin.csproj", "{8A24F7E3-4506-305A-D08E-50B86F9227C5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBD}") = "Nop.Plugin.Payments.Bluefin", "Nop.Plugin.Payments.Bluefin.csproj", "{8A24F7E3-4506-305A-D08E-50B86F9227C5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

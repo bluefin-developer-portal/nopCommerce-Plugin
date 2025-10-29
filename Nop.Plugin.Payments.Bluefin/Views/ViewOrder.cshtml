@@ -1,0 +1,83 @@
+@model OrderModel
+
+@{
+    // ViewBag.PageTitle = "Bluefin Reissue Orders";
+
+    Layout = "_AdminLayout";
+}
+
+<form asp-controller="PaymentBluefin" asp-action="Edit" method="post" asp-route-id="@Model.Id">
+    <div class="content-header clearfix">
+        <h1>
+            Order Details
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="ReissueOrders">Back to Bluefin Reissue Orders</a>
+            </small>
+        </h1>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Id" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.Id</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="OrderStatus" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.OrderStatus</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="OrderGuid" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.OrderGuid</div>
+                                </div>
+                            </div>
+
+
+                            <div class="form-group row">
+                                <div class="col-md-9 offset-md-3">
+                                    <button type="submit" name="reissueorder" id="reissueorder" class="btn btn-primary">
+                                        Reissue Order
+                                    </button>
+                                    <text>&nbsp;</text>
+                                    <nop-action-confirmation asp-button-id="reissueorder" />
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="~/Plugins/Payments.Bluefin/Content/json-dom-viewer.js"/>
+
+    <script>
+        ;$(document).ready(function() {
+
+
+        });
+
+    </script>
+
+</form>

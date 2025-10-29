@@ -74,6 +74,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
     private readonly BluefinPaymentSettings _bluefinPaymentSettings;
     private readonly BluefinTokenRepositoryService _bluefinTokenRepositoryService;
+    private readonly ReissueOrdersRepositoryService _reissueOrdersRepositoryService;
 
     private readonly BluefinGateway _gateway;
 
@@ -91,6 +92,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         IStoreContext storeContext,
         BluefinPaymentSettings bluefinPaymentSettings,
         BluefinTokenRepositoryService bluefinTokenRepositoryService,
+        ReissueOrdersRepositoryService reissueOrdersRepositoryService,
         TraceLogsRepositoryService traceLogsRepositoryService,
         IProductService productService,
         IShoppingCartService shoppingCartService,
@@ -113,6 +115,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         _webHelper = webHelper;
         _bluefinPaymentSettings = bluefinPaymentSettings;
         _bluefinTokenRepositoryService = bluefinTokenRepositoryService;
+        _reissueOrdersRepositoryService = reissueOrdersRepositoryService;
         _gateway = new BluefinGateway(
             logger,
             _bluefinPaymentSettings,
@@ -438,6 +441,15 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                     );
 
                 processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
+
+
+                await _reissueOrdersRepositoryService.InsertAsync(
+                    new ReissueOrderEntry
+                    {
+                        OrderGuid = orderGuid,
+                        BfTokenReference = bfTokenReference
+                    }
+                );
 
                 // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
 
