@@ -619,6 +619,19 @@ public class BluefinGateway : BluefinLogger
         };
     }
 
+    public dynamic MakeMITParameters()
+    {
+        return new
+        {
+            credentialOnFile = new
+            {
+                transactionInitiator = "MERCHANT",
+                storedCredentialIndicator = "SUBSEQUENT",
+                scheduleIndicator = "UNSCHEDULED"
+            }
+        };
+    }
+
 
     public async Task<TransactionResponse> CaptureAuthorization(string transactionId)
     {
@@ -765,6 +778,47 @@ public class BluefinGateway : BluefinLogger
         return await HandleTransactionRequest(requestMessage, request, "BluefinGateway.processSale ERROR");
 
     }
+
+    public async Task<TransactionResponse> ProcessMITSale(Transaction transaction)
+    {
+        string accountId = _bluefinPaymentSettings.AccountId;
+
+        string URI = "/api/v4/accounts/" +
+                    accountId + "/payments/sale";
+        var request = new
+        {
+            // transactionId = transaction.TransactionId,
+            description = string.IsNullOrEmpty(transaction.Description) ? "" : transaction.Description,
+            posProfile = "ECOMMERCE",
+            amounts = new
+            {
+                total = transaction.Total,
+                currency = transaction.Currency
+            },
+            trace = new
+            {
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
+            },
+            bfTokenReference = transaction.BfTokenReference,
+            credentialOnFile = MakeMITParameters().credentialOnFile
+        };
+
+        HttpRequestMessage requestMessage = null;
+
+        var serializedBody = JsonConvert.SerializeObject(request);
+
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
+        {
+            Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
+        };
+
+        InjectHeaders(requestMessage, URI, serializedBody);
+
+        return await HandleTransactionRequest(requestMessage, request, "BluefinGateway.processSale ERROR");
+
+    }
+
 
     public async Task<TransactionResponse> ProcessACHSale(Transaction transaction)
     {

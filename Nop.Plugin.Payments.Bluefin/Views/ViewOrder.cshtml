@@ -51,6 +51,16 @@
                                 </div>
                             </div>
 
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="PaymentStatus" />
+                                </div>
+                                <div class="col-md-9">
+                                    @* <nop-editor asp-for="PaymentStatus" /> *@
+                                    <div class="form-text-row">@Model.PaymentStatus</div>
+                                </div>
+                            </div>
+
 
                             <div class="form-group row">
                                 <div class="col-md-9 offset-md-3">

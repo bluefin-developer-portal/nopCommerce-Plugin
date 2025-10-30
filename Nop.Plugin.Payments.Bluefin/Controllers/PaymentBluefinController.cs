@@ -319,7 +319,7 @@ public class PaymentBluefinController : BasePaymentController
         return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
     }
 
-    public async Task<Order> insertOrder(int OrderId, OrderModel model) {
+    public async Task<Boolean> ProcessAndPlaceOrder(string BfTokenReference, int OrderId, OrderModel model) {
 
         var order = await _orderService.GetOrderByIdAsync(OrderId);
 
@@ -328,141 +328,201 @@ public class PaymentBluefinController : BasePaymentController
 
         var processPaymentRequest = new ProcessPaymentRequest();
         var processPaymentResult = new ProcessPaymentResult();
+        var currency = await _workContext.GetWorkingCurrencyAsync();
 
-        processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
+
+        var new_order_guid = Guid.NewGuid();
+        
+        TransactionResponse transaction_res;
+
+        // First try to process payment via Bluefin Payment Gateway
+        {
+            // TODO: Reuse from model.CustomValues
+            processPaymentRequest.CustomValues.Add("Bluefin Payment Type", "CARD");
+
+            var transaction = new Transaction
+            {
+                TransactionId = "",
+                Total = order.OrderTotal.ToString("F2"),
+                Currency = currency.CurrencyCode,
+                BfTokenReference = BfTokenReference,
+                Description = "",
+                CustomId = new_order_guid.ToString(),
+            };
+
+
+            transaction_res = await _gateway.ProcessMITSale(transaction);
+
+            if (!transaction_res.IsSuccess)
+            {
+                dynamic metadata = transaction_res.Metadata;
+                string err_message = JsonConvert.SerializeObject(metadata);
+                _notificationService.ErrorNotification(err_message);
+                return false;
+            }
+
+            processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
+            
+            processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
+
+            
+        }
+
+        // processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
 
         // processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
 
-        processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", "123456789010");
+        // processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", "123456789010");
 
 
 
-        // See: https://github.com/nopSolutions/nopCommerce/blob/release-4.80.9/src/Libraries/Nop.Services/Payments/PaymentService.cs#L372
-        var ds = new DictionarySerializer(processPaymentRequest.CustomValues);
-        var xs = new XmlSerializer(typeof(DictionarySerializer));
-        using var textWriter = new StringWriter();
-        using (var xmlWriter = XmlWriter.Create(textWriter))
+
+
+        // Place the order in nopCommerce db
         {
-            xs.Serialize(xmlWriter, ds);
-        }
 
-        var CustomValuesXml = textWriter.ToString();
-
-        var new_order_guid = Guid.NewGuid();
-
-        var new_order = new Order{
-            StoreId = store.Id,
-            OrderGuid = new_order_guid,
-            CustomerId = order.CustomerId,
-            CustomerLanguageId = customer_language.Id,
-            CustomerTaxDisplayType = order.CustomerTaxDisplayType,
-            CustomerIp = _webHelper.GetCurrentIpAddress(),
-            OrderSubtotalInclTax = order.OrderSubtotalInclTax,
-            OrderSubtotalExclTax = order.OrderSubtotalExclTax,
-            OrderSubTotalDiscountInclTax = order.OrderSubTotalDiscountInclTax,
-            OrderSubTotalDiscountExclTax = order.OrderSubTotalDiscountExclTax,
-            OrderShippingInclTax = order.OrderShippingInclTax,
-            OrderShippingExclTax = order.OrderShippingExclTax,
-            PaymentMethodAdditionalFeeInclTax = order.PaymentMethodAdditionalFeeInclTax,
-            PaymentMethodAdditionalFeeExclTax = order.PaymentMethodAdditionalFeeExclTax,
-            TaxRates = order.TaxRates,
-            OrderTax = order.OrderTax,
-            OrderTotal = order.OrderTotal,
-            RefundedAmount = order.RefundedAmount,
-            OrderDiscount = order.OrderDiscount,
-            CheckoutAttributeDescription = order.CheckoutAttributeDescription,
-            CheckoutAttributesXml = order.CheckoutAttributesXml,
-            CustomerCurrencyCode = order.CustomerCurrencyCode,
-            CurrencyRate = order.CurrencyRate,
-            AffiliateId = order.AffiliateId,
-            OrderStatus = order.OrderStatus,
-            AllowStoringCreditCardNumber = order.AllowStoringCreditCardNumber,
-            CardType = order.CardType,
-            CardName = order.CardName,
-            CardNumber = order.CardNumber,
-            MaskedCreditCardNumber = order.MaskedCreditCardNumber,
-            CardCvv2 = order.CardCvv2,
-            CardExpirationMonth = order.CardExpirationMonth,
-            CardExpirationYear = order.CardExpirationYear,
-            PaymentMethodSystemName = order.PaymentMethodSystemName,
-            AuthorizationTransactionId = order.AuthorizationTransactionId,
-            AuthorizationTransactionCode = order.AuthorizationTransactionCode,
-            AuthorizationTransactionResult = order.AuthorizationTransactionResult,
-            CaptureTransactionId = order.CaptureTransactionId,
-            CaptureTransactionResult = order.CaptureTransactionResult,
-            SubscriptionTransactionId = order.SubscriptionTransactionId,
-            PaymentStatus = processPaymentResult.NewPaymentStatus,
-            PaidDateUtc = null,
-            PickupInStore = order.PickupInStore,
-            ShippingStatus = order.ShippingStatus,
-            ShippingMethod = order.ShippingMethod,
-            ShippingRateComputationMethodSystemName = order.ShippingRateComputationMethodSystemName,
-            CustomValuesXml = CustomValuesXml,
-            VatNumber = order.VatNumber,
-            CreatedOnUtc = DateTime.UtcNow,
-            CustomOrderNumber = string.Empty
-
-        };
-
-        if(order.BillingAddressId != null) {
-            new_order.BillingAddressId = order.BillingAddressId;
-        }
-
-        if(order.ShippingAddressId != null) {
-            new_order.ShippingAddressId = order.ShippingAddressId;
-        }
-
-        if(order.PickupAddressId != null) {
-            new_order.PickupAddressId = order.PickupAddressId;
-        }
-
-        await _orderService.InsertOrderAsync(new_order);
-
-
-        // Order.Id can be used now
-        new_order.CustomOrderNumber = _customNumberFormatter.GenerateOrderCustomNumber(new_order);
-        await _orderService.UpdateOrderAsync(new_order);
-
-        var orderItems = await _orderService.GetOrderItemsAsync(order.Id);
-
-        foreach(var orderItem in orderItems) {
-            var newOrderItem = new OrderItem
+            // See: https://github.com/nopSolutions/nopCommerce/blob/release-4.80.9/src/Libraries/Nop.Services/Payments/PaymentService.cs#L372
+            var ds = new DictionarySerializer(processPaymentRequest.CustomValues);
+            var xs = new XmlSerializer(typeof(DictionarySerializer));
+            using var textWriter = new StringWriter();
+            using (var xmlWriter = XmlWriter.Create(textWriter))
             {
-                OrderItemGuid = Guid.NewGuid(),
-                OrderId = new_order.Id,
-                ProductId = orderItem.ProductId,
-                UnitPriceInclTax = orderItem.UnitPriceInclTax,
-                UnitPriceExclTax = orderItem.UnitPriceExclTax,
-                PriceInclTax = orderItem.PriceInclTax,
-                PriceExclTax = orderItem.PriceExclTax,
-                OriginalProductCost = orderItem.OriginalProductCost,
-                AttributeDescription = orderItem.AttributeDescription,
-                AttributesXml = orderItem.AttributesXml,
-                Quantity = orderItem.Quantity,
-                DiscountAmountInclTax = orderItem.DiscountAmountInclTax,
-                DiscountAmountExclTax = orderItem.DiscountAmountExclTax,
-                DownloadCount = orderItem.DownloadCount,
-                IsDownloadActivated = orderItem.IsDownloadActivated,
-                LicenseDownloadId = orderItem.LicenseDownloadId,
-                ItemWeight = orderItem.ItemWeight,
-                RentalStartDateUtc = orderItem.RentalStartDateUtc,
-                RentalEndDateUtc = orderItem.RentalEndDateUtc
+                xs.Serialize(xmlWriter, ds);
+            }
+
+            var CustomValuesXml = textWriter.ToString();
+
+            var new_order = new Order
+            {
+                StoreId = store.Id,
+                OrderGuid = new_order_guid,
+                CustomerId = order.CustomerId,
+                CustomerLanguageId = customer_language.Id,
+                CustomerTaxDisplayType = order.CustomerTaxDisplayType,
+                CustomerIp = _webHelper.GetCurrentIpAddress(),
+                OrderSubtotalInclTax = order.OrderSubtotalInclTax,
+                OrderSubtotalExclTax = order.OrderSubtotalExclTax,
+                OrderSubTotalDiscountInclTax = order.OrderSubTotalDiscountInclTax,
+                OrderSubTotalDiscountExclTax = order.OrderSubTotalDiscountExclTax,
+                OrderShippingInclTax = order.OrderShippingInclTax,
+                OrderShippingExclTax = order.OrderShippingExclTax,
+                PaymentMethodAdditionalFeeInclTax = order.PaymentMethodAdditionalFeeInclTax,
+                PaymentMethodAdditionalFeeExclTax = order.PaymentMethodAdditionalFeeExclTax,
+                TaxRates = order.TaxRates,
+                OrderTax = order.OrderTax,
+                OrderTotal = order.OrderTotal,
+                RefundedAmount = order.RefundedAmount,
+                OrderDiscount = order.OrderDiscount,
+                CheckoutAttributeDescription = order.CheckoutAttributeDescription,
+                CheckoutAttributesXml = order.CheckoutAttributesXml,
+                CustomerCurrencyCode = order.CustomerCurrencyCode,
+                CurrencyRate = order.CurrencyRate,
+                AffiliateId = order.AffiliateId,
+                OrderStatus = order.OrderStatus,
+                AllowStoringCreditCardNumber = order.AllowStoringCreditCardNumber,
+                CardType = order.CardType,
+                CardName = order.CardName,
+                CardNumber = order.CardNumber,
+                MaskedCreditCardNumber = order.MaskedCreditCardNumber,
+                CardCvv2 = order.CardCvv2,
+                CardExpirationMonth = order.CardExpirationMonth,
+                CardExpirationYear = order.CardExpirationYear,
+                PaymentMethodSystemName = order.PaymentMethodSystemName,
+                AuthorizationTransactionId = order.AuthorizationTransactionId,
+                AuthorizationTransactionCode = order.AuthorizationTransactionCode,
+                AuthorizationTransactionResult = order.AuthorizationTransactionResult,
+                CaptureTransactionId = order.CaptureTransactionId,
+                CaptureTransactionResult = order.CaptureTransactionResult,
+                SubscriptionTransactionId = order.SubscriptionTransactionId,
+                PaymentStatus = processPaymentResult.NewPaymentStatus,
+                PaidDateUtc = null,
+                PickupInStore = order.PickupInStore,
+                ShippingStatus = order.ShippingStatus,
+                ShippingMethod = order.ShippingMethod,
+                ShippingRateComputationMethodSystemName = order.ShippingRateComputationMethodSystemName,
+                CustomValuesXml = CustomValuesXml,
+                VatNumber = order.VatNumber,
+                CreatedOnUtc = DateTime.UtcNow,
+                CustomOrderNumber = string.Empty
+
             };
 
-            await _orderService.InsertOrderItemAsync(newOrderItem);
+            if (order.BillingAddressId != null)
+            {
+                new_order.BillingAddressId = order.BillingAddressId;
+            }
+
+            if (order.ShippingAddressId != null)
+            {
+                new_order.ShippingAddressId = order.ShippingAddressId;
+            }
+
+            if (order.PickupAddressId != null)
+            {
+                new_order.PickupAddressId = order.PickupAddressId;
+            }
+
+            new_order.PaidDateUtc = DateTime.UtcNow;
+
+            await _orderService.InsertOrderAsync(new_order);
+
+
+            // Order.Id can be used now (after the actual insert)
+            new_order.CustomOrderNumber = _customNumberFormatter.GenerateOrderCustomNumber(new_order);
+            await _orderService.UpdateOrderAsync(new_order);
+
+            var orderItems = await _orderService.GetOrderItemsAsync(order.Id);
+
+            foreach (var orderItem in orderItems)
+            {
+                var newOrderItem = new OrderItem
+                {
+                    OrderItemGuid = Guid.NewGuid(),
+                    OrderId = new_order.Id,
+                    ProductId = orderItem.ProductId,
+                    UnitPriceInclTax = orderItem.UnitPriceInclTax,
+                    UnitPriceExclTax = orderItem.UnitPriceExclTax,
+                    PriceInclTax = orderItem.PriceInclTax,
+                    PriceExclTax = orderItem.PriceExclTax,
+                    OriginalProductCost = orderItem.OriginalProductCost,
+                    AttributeDescription = orderItem.AttributeDescription,
+                    AttributesXml = orderItem.AttributesXml,
+                    Quantity = orderItem.Quantity,
+                    DiscountAmountInclTax = orderItem.DiscountAmountInclTax,
+                    DiscountAmountExclTax = orderItem.DiscountAmountExclTax,
+                    DownloadCount = orderItem.DownloadCount,
+                    IsDownloadActivated = orderItem.IsDownloadActivated,
+                    LicenseDownloadId = orderItem.LicenseDownloadId,
+                    ItemWeight = orderItem.ItemWeight,
+                    RentalStartDateUtc = orderItem.RentalStartDateUtc,
+                    RentalEndDateUtc = orderItem.RentalEndDateUtc
+                };
+
+                await _orderService.InsertOrderItemAsync(newOrderItem);
+            }
+
+            // Add a note
+            await _orderService.InsertOrderNoteAsync(new OrderNote
+            {
+                OrderId = new_order.Id,
+                Note = "The order " + order.OrderGuid.ToString() + " has been reissued as order " + new_order.OrderGuid.ToString(),
+                DisplayToCustomer = false,
+                CreatedOnUtc = DateTime.UtcNow
+            });
+
         }
 
-        // Add a note
-        await _orderService.InsertOrderNoteAsync(new OrderNote
-        {
-            OrderId = new_order.Id,
-            Note = "The order " + order.OrderGuid.ToString() + " has been reissued as order " + new_order.OrderGuid.ToString(),
-            DisplayToCustomer = false,
-            CreatedOnUtc = DateTime.UtcNow
-        });
+        // Enable chain reissuing
+        await _reissueOrdersRepositoryService.InsertAsync(
+            new ReissueOrderEntry
+            {
+                OrderGuid = new_order_guid.ToString(),
+                BfTokenReference = BfTokenReference,
+            }
+        );
 
-/*
-       if (model.PickupAddress != null)
+        /*
+        if (model.PickupAddress != null)
         {
             await _addressService.InsertAddressAsync(model.PickupAddress);
             order.PickupAddressId = model.PickupAddress.Id;
@@ -476,13 +536,13 @@ public class PaymentBluefinController : BasePaymentController
         */
 
 
-        return new_order;
+        return true;
 
     }
 
     #region Edit, delete
 
-    // [HttpPost]
+    // [HttpGet]
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.Orders.ORDERS_VIEW)]
     public virtual async Task<IActionResult> Edit(int id)
@@ -500,10 +560,12 @@ public class PaymentBluefinController : BasePaymentController
     [HttpPost, ActionName("Edit")]
     [FormValueRequired("reissueorder")]
     [CheckPermission(StandardPermission.Orders.ORDERS_CREATE_EDIT_DELETE)]
-    public async Task<IActionResult> ReissueOrder(int id, OrderModel order_model) {
+    public async Task<IActionResult> ReissueOrder(OrderModel order_model) { // (int id)
 
         // _notificationService.ErrorNotification("At least one payment method must be selected." + id.ToString());
         // _notificationService.SuccessNotification(); // await _localizationService.GetResourceAsync("Admin.Plugins.Saved")
+
+        int id = order_model.Id;
 
         var order = await _orderService.GetOrderByIdAsync(id);
 
@@ -511,46 +573,33 @@ public class PaymentBluefinController : BasePaymentController
 
         ReissueOrderEntry reissue_entry = await _reissueOrdersRepositoryService.GetBfTokenByOrderGuid(order.OrderGuid.ToString());
 
-        var new_order = await insertOrder(id, model);
-
-        if(reissue_entry != null) {
-            _notificationService.SuccessNotification("Reissued order created with ID: " + reissue_entry.BfTokenReference + " for guid: " + reissue_entry.OrderGuid);
-        } else {
-            _notificationService.ErrorNotification("Order is not able to be reissued.");
+        if (reissue_entry == null)
+        {
+            _notificationService.ErrorNotification("No Bluefin token assigned to the order. Order cannot be reissued.");
+            return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
         }
 
+        string BfTokenReference = reissue_entry.BfTokenReference;
 
-        /*
-                    await _reissueOrdersRepositoryService.InsertAsync(
-                new ReissueOrderEntry
-                {
-                    OrderGuid = orderGuid,
-                    BfTokenReference = bfTokenReference
-                }
-            );
-        */
+        var success = await ProcessAndPlaceOrder(BfTokenReference, id, model);
 
-        
 
-        /*
-        var model = new TraceLogModel
+        await _gateway.LogDebug("(order_model == null) " + (order_model == null).ToString(), "");
+
+        await _gateway.LogDebug("order_model Id " + order_model.Id, "");
+        await _gateway.LogDebug("order_model OrderStatus " + order_model.OrderStatus, "");
+        await _gateway.LogDebug("order_model PaymentStatus " + order_model.PaymentStatus, "");
+
+        if (success)
         {
-            Id = entry.Id,
-            TraceId = entry.TraceId,
-            ErrorMessage = entry.ErrorMessage,
-            Json = entry.Json,
-            Created = entry.Created
-        };
-        */
+            _notificationService.SuccessNotification(
+                "Reissued order created with Bluefin token: " + BfTokenReference + " for guid: " + reissue_entry.OrderGuid);
+        }
+        else
+        {
+            _notificationService.ErrorNotification("Order reissue failed.");
+        }
         
-        /*
-        var log = await _logger.GetLogByIdAsync(id);
-        if (log == null)
-            return RedirectToAction("List");
-
-        //prepare model
-        var model = await _logModelFactory.PrepareLogModelAsync(null, log);
-        */
 
         return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
     }
