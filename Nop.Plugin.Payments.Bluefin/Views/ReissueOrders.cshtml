@@ -48,6 +48,12 @@
                         Width = "100",
                         Render = new RenderCustom("renderColumnOrderStatus")
                     },
+                    new ColumnProperty(nameof(OrderModel.PaymentStatus))
+                    {
+                        // Title = T("Admin.Orders.Fields.OrderStatus").Text,
+                        Title = "Payment Status", // T("Admin.System.Log.Fields.LogLevel").Text,
+                        Width = "100",
+                    },
 
                     /*
                     new ColumnProperty(nameof(OrderModel.OrderGuid))

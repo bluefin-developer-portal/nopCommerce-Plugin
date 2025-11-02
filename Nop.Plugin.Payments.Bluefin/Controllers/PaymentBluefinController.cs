@@ -51,6 +51,7 @@ using Nop.Core.Domain.Orders;
 
 using Nop.Core.Domain.Catalog;
 
+using Microsoft.AspNetCore.Http;
 
 public partial record TraceLogsListModel : BasePagedListModel<TraceLogModel>
 {
@@ -560,10 +561,18 @@ public class PaymentBluefinController : BasePaymentController
     [HttpPost, ActionName("Edit")]
     [FormValueRequired("reissueorder")]
     [CheckPermission(StandardPermission.Orders.ORDERS_CREATE_EDIT_DELETE)]
-    public async Task<IActionResult> ReissueOrder(OrderModel order_model) { // (int id)
+    public async Task<IActionResult> ReissueOrder(OrderModel order_model, IFormCollection form) { // (int id)
 
         // _notificationService.ErrorNotification("At least one payment method must be selected." + id.ToString());
         // _notificationService.SuccessNotification(); // await _localizationService.GetResourceAsync("Admin.Plugins.Saved")
+        
+        foreach (string key in form.Keys)
+        {
+            string value = form[key];
+            // Now you can work with the key and value of each form item
+            // For example, you could log them or store them in a database:
+            await _gateway.LogDebug("form: key: " + key.ToString() + " value: " + value.ToString(), "");
+        }
 
         int id = order_model.Id;
 
@@ -589,6 +598,7 @@ public class PaymentBluefinController : BasePaymentController
         await _gateway.LogDebug("order_model Id " + order_model.Id, "");
         await _gateway.LogDebug("order_model OrderStatus " + order_model.OrderStatus, "");
         await _gateway.LogDebug("order_model PaymentStatus " + order_model.PaymentStatus, "");
+
 
         if (success)
         {

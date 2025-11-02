@@ -287,7 +287,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
         string paymentType = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "paymentType", nop_store.Id);
 
-        string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
+        string bfTokenReference = (string)processPaymentRequest.CustomValues["bfTokenReference"];
         string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);
         bool StoreBluefinToken = await _genericAttributeService.GetAttributeAsync<bool>(nop_customer, "StoreBluefinToken", nop_store.Id, false);
 
@@ -743,6 +743,11 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             throw new ArgumentNullException(nameof(form));
 
         var paymentInfo = new ProcessPaymentRequest();
+
+        if(form.TryGetValue("BfTokenReference", out StringValues BfTokenReference))
+        {
+            paymentInfo.CustomValues.Add("bfTokenReference", BfTokenReference[0]);
+        }
 
         return Task.FromResult(paymentInfo);
     }

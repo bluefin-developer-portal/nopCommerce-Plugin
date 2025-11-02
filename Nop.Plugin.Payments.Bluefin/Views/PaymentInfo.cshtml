@@ -46,6 +46,7 @@
 </style>
 
 <input asp-for="IFrameCompleted" id="IFrameCompleted" type="hidden" />
+<input asp-for="BfTokenReference" id="BfTokenReference" type="hidden" />
 <div id="bluefin-iframe-container"></div>
 
 <script>
@@ -301,7 +302,12 @@
                         return
                     }
 
-                    document.getElementById('IFrameCompleted').value = 'Checkout Completed'
+                    let iFrameCompleted = document.getElementById('IFrameCompleted')
+                    let BfTokenReference_input = document.getElementById('BfTokenReference')
+
+                    iFrameCompleted && (iFrameCompleted.value = 'Checkout Completed')
+                    BfTokenReference_input && (BfTokenReference_input.value = bfTokenReference)
+
                     PaymentInfo.save()
 
                     // console.debug('Checkout complete:', data)

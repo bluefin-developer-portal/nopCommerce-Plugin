@@ -61,6 +61,19 @@
                                 </div>
                             </div>
 
+                            <div>
+                                <input name="_AAA" id="_AAA" type="hidden" />
+                            </div>
+
+                            <div>
+                                @{
+                                    var dataDict = new ViewDataDictionary(ViewData) { new KeyValuePair<string, object>("productId", 48) };
+                                    // See: https://github.com/nopSolutions/nopCommerce/blob/release-4.80.9/src/Presentation/Nop.Web/Areas/Admin/Controllers/OrderController.cs#L1539
+                                }
+                                @* @await Html.PartialAsync("_ProductAddAttributes", Model.ProductAttributes, dataDict) *@
+                                @await Html.PartialAsync("~/Plugins/Payments.Bluefin/Views/_ProductAddAttributes.cshtml", new List<AddProductToOrderModel.ProductAttributeModel>(), dataDict);
+                            </div>
+
 
                             <div class="form-group row">
                                 <div class="col-md-9 offset-md-3">
