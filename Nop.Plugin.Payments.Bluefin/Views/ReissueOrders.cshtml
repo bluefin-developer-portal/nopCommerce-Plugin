@@ -68,7 +68,7 @@
                         Title = "View", // T("Admin.Common.View").Text,
                         Width = "50",
                         ClassName =  NopColumnClassDefaults.Button,
-                        Render = new RenderButtonView(new DataUrl("~/Admin/PaymentBluefin/ViewOrder"))
+                        Render = new RenderButtonView(new DataUrl("~/Admin/PaymentBluefin/ViewOrder/" + DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString() ))
                     }
                     
                 }

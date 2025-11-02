@@ -290,12 +290,16 @@ public class PaymentBluefinController : BasePaymentController
 
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.System.MANAGE_SYSTEM_LOG)]
-    public async Task<IActionResult> ViewOrder(int id)
+    // [Route("ViewOrder/{order_temp_id}/{id}")]
+    // [HttpGet("ViewOrder/{order_temp_id:long}/{id:int}")]
+    public async Task<IActionResult> ViewOrder(long order_temp_id, int id)
     {
 
         var order = await _orderService.GetOrderByIdAsync(id);
 
         var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+
+        // TODO: Use a different model to pass on the order_temp_id to be reused within a cshtml page via model.order_temp_id, for instance.
 
         /*
         var model = new TraceLogModel

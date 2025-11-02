@@ -24,6 +24,24 @@
                     <div class="card card-default">
                         <div class="card-body">
 
+                            <blockquote>
+                                <p>
+                                <p>
+                                    To add products to the newly reissued order after applying the order amonts, go to Sales -> Orders with the reissued order id, click on View scroll down to Products and Add Products.
+                                </p>
+                                <br/>
+                                <p>
+                                    The shipping and billing address is based on the previous/initial order.
+                                </p>
+
+                                For more details on configuring the Bluefin plugin, make sure to be up-to-date with the
+                                <a href="https://developers.bluefin.com/payconex/v4/reference/creating-a-configuration"
+                                    target="_blank" rel="noopener noreferrer">
+                                    Bluefin Checkout Component Documentation.
+                                </a>
+                                </p>
+                            </blockquote>
+
                             <div class="form-group row">
                                 <div class="col-md-3">
                                     <nop-label asp-for="Id" />
@@ -61,18 +79,11 @@
                                 </div>
                             </div>
 
+                            @*
                             <div>
                                 <input name="_AAA" id="_AAA" type="hidden" />
                             </div>
-
-                            <div>
-                                @{
-                                    var dataDict = new ViewDataDictionary(ViewData) { new KeyValuePair<string, object>("productId", 48) };
-                                    // See: https://github.com/nopSolutions/nopCommerce/blob/release-4.80.9/src/Presentation/Nop.Web/Areas/Admin/Controllers/OrderController.cs#L1539
-                                }
-                                @* @await Html.PartialAsync("_ProductAddAttributes", Model.ProductAttributes, dataDict) *@
-                                @await Html.PartialAsync("~/Plugins/Payments.Bluefin/Views/_ProductAddAttributes.cshtml", new List<AddProductToOrderModel.ProductAttributeModel>(), dataDict);
-                            </div>
+                            *@
 
 
                             <div class="form-group row">
@@ -94,7 +105,7 @@
     </section>
 
     <script>
-        ;$(document).ready(function() {
+        ; $(document).ready(function () {
 
 
         });

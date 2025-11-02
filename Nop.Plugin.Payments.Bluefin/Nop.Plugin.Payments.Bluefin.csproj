@@ -29,7 +29,6 @@
     <None Remove="Views\ViewTraceLog.cshtml" />
     <None Remove="Views\ReissueOrders.cshtml" />
     <None Remove="Views\ViewOrder.cshtml" />
-    <None Remove="Views\_ProductAddAttributes.cshtml" />
     <None Remove="Views\_ViewImports.cshtml" />
   </ItemGroup>
 
@@ -59,9 +58,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Views\ViewOrder.cshtml">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Views\_ProductAddAttributes.cshtml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Views\_ViewImports.cshtml">
