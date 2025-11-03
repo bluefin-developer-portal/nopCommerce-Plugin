@@ -88,6 +88,20 @@ public class RefundTransaction
     #nullable disable
 }
 
+public class TransactionMIT
+{
+    public string TransactionId { get; set; }
+    public string Total { get; set; }
+    public string Currency { get; set; }
+    public string BfTokenReference { get; set; }
+
+    public string Description { get; set; }
+
+    #nullable enable
+    public string? CustomId { get; set; }
+    #nullable disable
+}
+
 public class Utility
 {
 
@@ -200,7 +214,7 @@ public class Utility
         ).Wait();
         */
 
-        string bfPaymentType= "";
+        string bfPaymentType = "";
 
         try
         {
@@ -779,7 +793,7 @@ public class BluefinGateway : BluefinLogger
 
     }
 
-    public async Task<TransactionResponse> ProcessMITSale(Transaction transaction)
+    public async Task<TransactionResponse> ProcessMITSale(TransactionMIT transaction)
     {
         string accountId = _bluefinPaymentSettings.AccountId;
 

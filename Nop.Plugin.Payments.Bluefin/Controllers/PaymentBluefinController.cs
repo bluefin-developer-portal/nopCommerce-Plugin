@@ -45,8 +45,6 @@ using Nop.Web.Areas.Admin.Factories;
 
 
 using Nop.Core.Domain.Payments;
-
-
 using Nop.Core.Domain.Orders;
 
 using Nop.Core.Domain.Catalog;
@@ -203,7 +201,7 @@ public class PaymentBluefinController : BasePaymentController
             new TraceLogModel
             {
                 Id = 1,
-                TraceId = "373fe421-bc7c-49c7-9a46-6f2d109fc3d8",
+                TraceId = "373fe421-bc7c-49c7-9a46-6d2d109fc3d8",
                 ErrorMessage = "Request validation error: Does not conform to API schema.",
                 Json = "{}"
             },
@@ -297,7 +295,16 @@ public class PaymentBluefinController : BasePaymentController
 
         var order = await _orderService.GetOrderByIdAsync(id);
 
-        var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+        // var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+
+        var model = new ReissueOrderModel
+        {
+            Id = order.Id,
+            OrderStatus = order.OrderStatus,
+            OrderGuid = order.OrderGuid,
+            PaymentStatus = order.PaymentStatus,
+            OrderTotal = order.OrderTotal,
+        };
 
         // TODO: Use a different model to pass on the order_temp_id to be reused within a cshtml page via model.order_temp_id, for instance.
 
@@ -324,9 +331,9 @@ public class PaymentBluefinController : BasePaymentController
         return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
     }
 
-    public async Task<Boolean> ProcessAndPlaceOrder(string BfTokenReference, int OrderId, OrderModel model) {
+    public async Task<Boolean> ProcessAndPlaceOrder(string BfTokenReference, ReissueOrderModel reissue_order_model) {
 
-        var order = await _orderService.GetOrderByIdAsync(OrderId);
+        var order = await _orderService.GetOrderByIdAsync(reissue_order_model.Id);
 
         var store = await _storeContext.GetCurrentStoreAsync();
         var customer_language = await _workContext.GetWorkingLanguageAsync();
@@ -335,6 +342,8 @@ public class PaymentBluefinController : BasePaymentController
         var processPaymentResult = new ProcessPaymentResult();
         var currency = await _workContext.GetWorkingCurrencyAsync();
 
+
+        decimal reissueOrderTotal = reissue_order_model.ReissueTotal;
 
         var new_order_guid = Guid.NewGuid();
         
@@ -345,10 +354,10 @@ public class PaymentBluefinController : BasePaymentController
             // TODO: Reuse from model.CustomValues
             processPaymentRequest.CustomValues.Add("Bluefin Payment Type", "CARD");
 
-            var transaction = new Transaction
+            var transaction = new TransactionMIT
             {
                 TransactionId = "",
-                Total = order.OrderTotal.ToString("F2"),
+                Total = reissueOrderTotal.ToString("F2"),
                 Currency = currency.CurrencyCode,
                 BfTokenReference = BfTokenReference,
                 Description = "",
@@ -367,6 +376,8 @@ public class PaymentBluefinController : BasePaymentController
             }
 
             processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
+
+            processPaymentRequest.CustomValues.Add("Bluefin Transaction Initiator", "Merchant Initiated Transaction");
             
             processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
 
@@ -378,7 +389,6 @@ public class PaymentBluefinController : BasePaymentController
         // processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
 
         // processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", "123456789010");
-
 
 
 
@@ -397,14 +407,16 @@ public class PaymentBluefinController : BasePaymentController
 
             var CustomValuesXml = textWriter.ToString();
 
+            // See: https://webiant.com/docs/nopcommerce/Libraries/Nop.Core/Domain/Orders/Order for the complete Order Entry Schema
             var new_order = new Order
             {
                 StoreId = store.Id,
                 OrderGuid = new_order_guid,
                 CustomerId = order.CustomerId,
                 CustomerLanguageId = customer_language.Id,
-                CustomerTaxDisplayType = order.CustomerTaxDisplayType,
+                // CustomerTaxDisplayType = order.CustomerTaxDisplayType,
                 CustomerIp = _webHelper.GetCurrentIpAddress(),
+                /*
                 OrderSubtotalInclTax = order.OrderSubtotalInclTax,
                 OrderSubtotalExclTax = order.OrderSubtotalExclTax,
                 OrderSubTotalDiscountInclTax = order.OrderSubTotalDiscountInclTax,
@@ -415,12 +427,16 @@ public class PaymentBluefinController : BasePaymentController
                 PaymentMethodAdditionalFeeExclTax = order.PaymentMethodAdditionalFeeExclTax,
                 TaxRates = order.TaxRates,
                 OrderTax = order.OrderTax,
-                OrderTotal = order.OrderTotal,
+                */
+                OrderTotal = reissueOrderTotal,
+                /*
                 RefundedAmount = order.RefundedAmount,
                 OrderDiscount = order.OrderDiscount,
                 CheckoutAttributeDescription = order.CheckoutAttributeDescription,
                 CheckoutAttributesXml = order.CheckoutAttributesXml,
+                */
                 CustomerCurrencyCode = order.CustomerCurrencyCode,
+                /*
                 CurrencyRate = order.CurrencyRate,
                 AffiliateId = order.AffiliateId,
                 OrderStatus = order.OrderStatus,
@@ -432,13 +448,16 @@ public class PaymentBluefinController : BasePaymentController
                 CardCvv2 = order.CardCvv2,
                 CardExpirationMonth = order.CardExpirationMonth,
                 CardExpirationYear = order.CardExpirationYear,
+                */
                 PaymentMethodSystemName = order.PaymentMethodSystemName,
+                /*
                 AuthorizationTransactionId = order.AuthorizationTransactionId,
                 AuthorizationTransactionCode = order.AuthorizationTransactionCode,
                 AuthorizationTransactionResult = order.AuthorizationTransactionResult,
                 CaptureTransactionId = order.CaptureTransactionId,
                 CaptureTransactionResult = order.CaptureTransactionResult,
                 SubscriptionTransactionId = order.SubscriptionTransactionId,
+                */
                 PaymentStatus = processPaymentResult.NewPaymentStatus,
                 PaidDateUtc = null,
                 PickupInStore = order.PickupInStore,
@@ -451,6 +470,8 @@ public class PaymentBluefinController : BasePaymentController
                 CustomOrderNumber = string.Empty
 
             };
+
+            new_order.OrderStatus = OrderStatus.Complete;
 
             // await _gateway.LogDebug("order.billingAddressId " + order.BillingAddressId.ToString() + (order.BillingAddressId == null).ToString(), "");
             // await _gateway.LogDebug("order.shippingAddressId " + order.ShippingAddressId.ToString() + (order.ShippingAddressId == null).ToString(), "");
@@ -476,6 +497,7 @@ public class PaymentBluefinController : BasePaymentController
             new_order.CustomOrderNumber = _customNumberFormatter.GenerateOrderCustomNumber(new_order);
             await _orderService.UpdateOrderAsync(new_order);
 
+            /*
             var orderItems = await _orderService.GetOrderItemsAsync(order.Id);
 
             foreach (var orderItem in orderItems)
@@ -505,6 +527,7 @@ public class PaymentBluefinController : BasePaymentController
 
                 await _orderService.InsertOrderItemAsync(newOrderItem);
             }
+            */
 
             // Add a note
             await _orderService.InsertOrderNoteAsync(new OrderNote
@@ -550,33 +573,41 @@ public class PaymentBluefinController : BasePaymentController
     // [HttpGet]
     [Area(AreaNames.ADMIN)]
     [CheckPermission(StandardPermission.Orders.ORDERS_VIEW)]
-    public virtual async Task<IActionResult> Edit(int id)
+    public virtual async Task<IActionResult> EditOrder(int id)
     {
         var order = await _orderService.GetOrderByIdAsync(id);
 
-        //prepare model
-        var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+        // var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+        var model = new ReissueOrderModel
+        {
+            Id = order.Id,
+            OrderStatus = order.OrderStatus,
+            OrderGuid = order.OrderGuid,
+            PaymentStatus = order.PaymentStatus,
+            OrderTotal = order.OrderTotal,
+        };
+
 
         return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
     }
     
 
     [Area(AreaNames.ADMIN)]
-    [HttpPost, ActionName("Edit")]
+    [HttpPost, ActionName("EditOrder")]
     [FormValueRequired("reissueorder")]
     [CheckPermission(StandardPermission.Orders.ORDERS_CREATE_EDIT_DELETE)]
-    public async Task<IActionResult> ReissueOrder(OrderModel order_model, IFormCollection form) { // (int id)
+    public async Task<IActionResult> ReissueOrder(ReissueOrderModel order_model) { // IFormCollection form) { // (int id)
 
         // _notificationService.ErrorNotification("At least one payment method must be selected." + id.ToString());
         // _notificationService.SuccessNotification(); // await _localizationService.GetResourceAsync("Admin.Plugins.Saved")
         
+        /*
         foreach (string key in form.Keys)
         {
             string value = form[key];
-            // Now you can work with the key and value of each form item
-            // For example, you could log them or store them in a database:
             await _gateway.LogDebug("form: key: " + key.ToString() + " value: " + value.ToString(), "");
         }
+        */
 
         int id = order_model.Id;
 
@@ -586,15 +617,27 @@ public class PaymentBluefinController : BasePaymentController
 
         ReissueOrderEntry reissue_entry = await _reissueOrdersRepositoryService.GetBfTokenByOrderGuid(order.OrderGuid.ToString());
 
+        var reissue_order_model = new ReissueOrderModel
+        {
+            Id = order.Id,
+            OrderStatus = order.OrderStatus,
+            OrderGuid = order.OrderGuid,
+            PaymentStatus = order.PaymentStatus,
+            OrderTotal = order.OrderTotal,
+            ReissueTotal = order_model.ReissueTotal,
+        };
+
+        await _gateway.LogDebug("reissue_order_model ReissueTotal " + order_model.ReissueTotal.ToString(), "");
+
         if (reissue_entry == null)
         {
             _notificationService.ErrorNotification("No Bluefin token assigned to the order. Order cannot be reissued.");
-            return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
+            return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", reissue_order_model);
         }
 
         string BfTokenReference = reissue_entry.BfTokenReference;
 
-        var success = await ProcessAndPlaceOrder(BfTokenReference, id, model);
+        var success = await ProcessAndPlaceOrder(BfTokenReference, order_model);
 
 
         await _gateway.LogDebug("(order_model == null) " + (order_model == null).ToString(), "");
@@ -613,9 +656,8 @@ public class PaymentBluefinController : BasePaymentController
         {
             _notificationService.ErrorNotification("Order reissue failed.");
         }
-        
 
-        return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
+        return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", reissue_order_model);
     }
     #endregion
 

@@ -55,6 +55,19 @@
                         Width = "100",
                     },
 
+                    new ColumnProperty(nameof(OrderModel.CreatedOn))
+                    {
+                        Title = T("Admin.Orders.Fields.CreatedOn").Text,
+                        Width = "120",
+                        Render = new RenderDate()
+                    },
+
+                    new ColumnProperty(nameof(OrderModel.OrderTotal))
+                    {
+                        Title = T("Admin.Orders.Fields.OrderTotal").Text,
+                        Width = "100",
+                    },
+
                     /*
                     new ColumnProperty(nameof(OrderModel.OrderGuid))
                     {

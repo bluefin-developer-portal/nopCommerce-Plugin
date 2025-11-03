@@ -180,7 +180,14 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.EnableACH"] = "ACH (Bank Transfer)",
             ["Plugins.Payments.Bluefin.Fields.EnableGooglePay"] = "Google Pay",
             ["Plugins.Payments.Bluefin.Fields.EnableClickToPay"] = "Click to Pay",
-            ["Plugins.Payments.Bluefin.Fields.PaymentMethod.Required"] = "At least one payment method must be selected."
+            ["Plugins.Payments.Bluefin.Fields.PaymentMethod.Required"] = "At least one payment method must be selected.",
+
+
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalPaymentId"] = "Original Order Id",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderStatus"] = "Original Order Status",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalPaymentStatus"] = "Original Order Payment Status",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderTotal"] = "Original Order Total",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.ReissueTotal"] = "Reissue Total (Decimal)",
         });
 
         await base.InstallAsync();

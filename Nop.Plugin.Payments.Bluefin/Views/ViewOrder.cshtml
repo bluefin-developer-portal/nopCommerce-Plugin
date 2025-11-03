@@ -1,4 +1,4 @@
-@model OrderModel
+@model ReissueOrderModel
 
 @{
     // ViewBag.PageTitle = "Bluefin Reissue Orders";
@@ -6,7 +6,7 @@
     Layout = "_AdminLayout";
 }
 
-<form asp-controller="PaymentBluefin" asp-action="Edit" method="post" asp-route-id="@Model.Id">
+<form asp-controller="PaymentBluefin" asp-action="EditOrder" method="post" asp-route-id="@Model.Id">
     <div class="content-header clearfix">
         <h1>
             Order Details
@@ -75,10 +75,30 @@
                                     <nop-label asp-for="PaymentStatus" />
                                 </div>
                                 <div class="col-md-9">
-                                    @* <nop-editor asp-for="PaymentStatus" /> *@
                                     <div class="form-text-row">@Model.PaymentStatus</div>
                                 </div>
                             </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="OrderTotal" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.OrderTotal</div>
+                                </div>
+                            </div>
+                        
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="ReissueTotal" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ReissueTotal" asp-required="true" />
+                                </div>
+                            </div>
+
+
 
                             @*
                             <div>
