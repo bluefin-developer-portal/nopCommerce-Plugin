@@ -292,7 +292,7 @@ public class PaymentBluefinController : BasePaymentController
     [CheckPermission(StandardPermission.System.MANAGE_SYSTEM_LOG)]
     // [Route("ViewOrder/{order_temp_id}/{id}")]
     // [HttpGet("ViewOrder/{order_temp_id:long}/{id:int}")]
-    public async Task<IActionResult> ViewOrder(long order_temp_id, int id)
+    public async Task<IActionResult> ViewOrder(int id) // long order_temp_id, int id
     {
 
         var order = await _orderService.GetOrderByIdAsync(id);
@@ -452,10 +452,10 @@ public class PaymentBluefinController : BasePaymentController
 
             };
 
-            if (order.BillingAddressId != null)
-            {
-                new_order.BillingAddressId = order.BillingAddressId;
-            }
+            // await _gateway.LogDebug("order.billingAddressId " + order.BillingAddressId.ToString() + (order.BillingAddressId == null).ToString(), "");
+            // await _gateway.LogDebug("order.shippingAddressId " + order.ShippingAddressId.ToString() + (order.ShippingAddressId == null).ToString(), "");
+
+            new_order.BillingAddressId = order.BillingAddressId;
 
             if (order.ShippingAddressId != null)
             {
@@ -786,37 +786,7 @@ public class PaymentBluefinController : BasePaymentController
 
         dynamic res = await _gateway.IframeInit(customer, bfTokenReferences);
 
-        await _genericAttributeService.SaveAttributeAsync(nop_customer, "bfTransactionId", res.transactionId, nop_store.Id);
-
-
         return Json(res);
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> SetBluefinToken(string bfTokenReference, string paymentType)
-    {
-
-        var nop_customer = await _workContext.GetCurrentCustomerAsync();
-        var nop_store = await _storeContext.GetCurrentStoreAsync();
-
-        await _genericAttributeService.SaveAttributeAsync(nop_customer, "bfTokenReference", bfTokenReference, nop_store.Id);
-        await _genericAttributeService.SaveAttributeAsync(nop_customer, "paymentType", paymentType, nop_store.Id);
-
-
-        return Json(new { ok = true });
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> StoreBluefinToken()
-    {
-
-        var nop_customer = await _workContext.GetCurrentCustomerAsync();
-        var nop_store = await _storeContext.GetCurrentStoreAsync();
-
-        await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", true, nop_store.Id);
-
-
-        return Json(new { ok = true });
     }
 
 }
