@@ -25,7 +25,9 @@ public class BluefinCustomer
     public string Amount { get; set; } // TODO: Refactor to an Order class or similar
     public string Currency { get; set; }
     public BillingAddress BillingAddress { get; set; }
-    public ShippingAddress ShippingAddress { get; set; }
+    #nullable enable
+    public ShippingAddress? ShippingAddress { get; set; }
+    #nullable disable
 }
 
 public class BillingAddress
@@ -793,30 +795,45 @@ public class BluefinGateway : BluefinLogger
 
     }
 
-    public async Task<TransactionResponse> ProcessMITSale(TransactionMIT transaction)
+    public async Task<TransactionResponse> ProcessMITSale(TransactionMIT transaction, dynamic bluefin_customer)
     {
         string accountId = _bluefinPaymentSettings.AccountId;
 
         string URI = "/api/v4/accounts/" +
                     accountId + "/payments/sale";
-        var request = new
+
+
+        dynamic request = new ExpandoObject();
+
+        request.description = string.IsNullOrEmpty(transaction.Description) ? "" : transaction.Description;
+        request.posProfile = "ECOMMERCE";
+        request.amounts = new
         {
-            // transactionId = transaction.TransactionId,
-            description = string.IsNullOrEmpty(transaction.Description) ? "" : transaction.Description,
-            posProfile = "ECOMMERCE",
-            amounts = new
-            {
-                total = transaction.Total,
-                currency = transaction.Currency
-            },
-            trace = new
-            {
-                source = "nopCommerce Plugin",
-                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
-            },
-            bfTokenReference = transaction.BfTokenReference,
-            credentialOnFile = MakeMITParameters().credentialOnFile
+            total = transaction.Total,
+            currency = transaction.Currency,
         };
+        request.trace = new
+        {
+            source = "nopCommerce Plugin",
+            customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId,
+        };
+
+        request.bfTokenReference = transaction.BfTokenReference;
+        request.credentialOnFile = MakeMITParameters().credentialOnFile;
+
+
+        if(bluefin_customer.customer != null)
+        {
+            request.customer = bluefin_customer.customer;
+        }
+
+        if(bluefin_customer.shippingAddress != null)
+        {
+            request.shippingAddress = bluefin_customer.shippingAddress;
+        } else
+        {
+            ((IDictionary<string, object>)request).Remove("shippingAddress");
+        }
 
         HttpRequestMessage requestMessage = null;
 

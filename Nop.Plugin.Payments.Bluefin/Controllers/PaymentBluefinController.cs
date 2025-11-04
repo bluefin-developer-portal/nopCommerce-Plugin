@@ -50,6 +50,10 @@ using Nop.Core.Domain.Orders;
 using Nop.Core.Domain.Catalog;
 
 using Microsoft.AspNetCore.Http;
+using System.Dynamic;
+
+
+using Nop.Services.Directory;
 
 public partial record TraceLogsListModel : BasePagedListModel<TraceLogModel>
 {
@@ -84,6 +88,12 @@ public class PaymentBluefinController : BasePaymentController
     private readonly TraceLogsRepositoryService _traceLogsRepositoryService;
     private readonly ReissueOrdersRepositoryService _reissueOrdersRepositoryService;
 
+    private readonly IAddressService _addressService;
+
+
+    private readonly IStateProvinceService _stateProvinceService;
+    private readonly ICountryService _countryService;
+
     public PaymentBluefinController(ILogger logger,
         ISettingService settingService,
         ILocalizationService localizationService,
@@ -99,6 +109,9 @@ public class PaymentBluefinController : BasePaymentController
         IWorkContext workContext,
         IStoreContext storeContext,
         ICustomNumberFormatter customNumberFormatter,
+        IAddressService addressService,
+        IStateProvinceService stateProvinceService,
+        ICountryService countryService,
         IWebHelper webHelper)
     {
         // _logger = logger;
@@ -116,6 +129,9 @@ public class PaymentBluefinController : BasePaymentController
         _reissueOrdersRepositoryService = reissueOrdersRepositoryService;
         _traceLogsRepositoryService = traceLogsRepositoryService;
         _workContext = workContext;
+        _addressService = addressService;
+        _stateProvinceService = stateProvinceService;
+        _countryService = countryService;
         _webHelper = webHelper;
         _gateway = new BluefinGateway(
             logger,
@@ -318,7 +334,7 @@ public class PaymentBluefinController : BasePaymentController
             Created = entry.Created
         };
         */
-        
+
         /*
         var log = await _logger.GetLogByIdAsync(id);
         if (log == null)
@@ -330,6 +346,24 @@ public class PaymentBluefinController : BasePaymentController
 
         return View("~/Plugins/Payments.Bluefin/Views/ViewOrder.cshtml", model);
     }
+
+    public string parsePhoneNumber(string phone_number)
+    {
+
+        string output = "";
+        foreach(char c in phone_number)
+        {
+            if(Char.IsDigit(c))
+            {
+                output += c;
+            }
+
+        }
+
+        return output;
+
+    }
+
 
     public async Task<Boolean> ProcessAndPlaceOrder(string BfTokenReference, ReissueOrderModel reissue_order_model) {
 
@@ -351,7 +385,7 @@ public class PaymentBluefinController : BasePaymentController
 
         // First try to process payment via Bluefin Payment Gateway
         {
-            // TODO: Reuse from model.CustomValues
+            // TODO: Reuse from model.CustomValues once we can reissue ACH Payment
             processPaymentRequest.CustomValues.Add("Bluefin Payment Type", "CARD");
 
             var transaction = new TransactionMIT
@@ -364,8 +398,143 @@ public class PaymentBluefinController : BasePaymentController
                 CustomId = new_order_guid.ToString(),
             };
 
+            dynamic bluefin_customer = new ExpandoObject();
 
-            transaction_res = await _gateway.ProcessMITSale(transaction);
+
+            {
+                var billing_address = await _addressService.GetAddressByIdAsync(order.BillingAddressId);
+                var stateProvince = await _stateProvinceService.GetStateProvinceByAddressAsync(billing_address);
+                var country = await _countryService.GetCountryByAddressAsync(billing_address);
+
+                bluefin_customer.customer = new ExpandoObject();
+
+                if (!string.IsNullOrEmpty(billing_address.Email))
+                {
+                    bluefin_customer.customer.email = billing_address.Email;
+                }
+
+                if (!string.IsNullOrEmpty(billing_address.PhoneNumber))
+                {
+                    bluefin_customer.customer.phone = "+" + parsePhoneNumber(billing_address.PhoneNumber);
+                }
+
+                if (!string.IsNullOrEmpty(billing_address.FirstName) && !string.IsNullOrEmpty(billing_address.LastName))
+                {
+                    bluefin_customer.customer.name = billing_address.FirstName + " " + billing_address.LastName;
+                }
+
+                bluefin_customer.customer.billingAddress = new ExpandoObject();
+
+                if (!string.IsNullOrEmpty(billing_address.Address1))
+                {
+                    bluefin_customer.customer.billingAddress.address1 = billing_address.Address1;
+                }
+
+                if (!string.IsNullOrEmpty(billing_address.Address2))
+                {
+                    bluefin_customer.customer.billingAddress.address2 = billing_address.Address2;
+
+                }
+
+                if(!string.IsNullOrEmpty(billing_address.City))
+                {
+                    bluefin_customer.customer.billingAddress.city = billing_address.City;
+                }
+
+
+                if (!string.IsNullOrEmpty(billing_address.ZipPostalCode))
+                {
+                    bluefin_customer.customer.billingAddress.zip = billing_address.ZipPostalCode;
+                }
+
+                if (!string.IsNullOrEmpty(billing_address.Company))
+                {
+                    bluefin_customer.customer.billingAddress.company = billing_address.Company;
+                }
+
+                if (!string.IsNullOrEmpty(stateProvince.Abbreviation))
+                {
+                    bluefin_customer.customer.billingAddress.state = stateProvince.Abbreviation;
+                }
+
+                if(!string.IsNullOrEmpty(country.ThreeLetterIsoCode))
+                {
+                    bluefin_customer.customer.billingAddress.country = country.ThreeLetterIsoCode;
+                }
+
+
+            }
+
+            if (order.ShippingAddressId != null)
+            {
+                bluefin_customer.shippingAddress = new ExpandoObject();
+
+                var shipping_address = await _addressService.GetAddressByIdAsync(order.ShippingAddressId ?? 0);
+                var shipping_stateProvince = await _stateProvinceService.GetStateProvinceByAddressAsync(shipping_address);
+                var shipping_country = await _countryService.GetCountryByAddressAsync(shipping_address);
+
+                if(!string.IsNullOrEmpty(shipping_address.FirstName) && !string.IsNullOrEmpty(shipping_address.LastName))
+                {
+                    bluefin_customer.shippingAddress.recipient = shipping_address.FirstName + " " + shipping_address.LastName;
+                }
+
+                if (!string.IsNullOrEmpty(shipping_address.PhoneNumber))
+                {
+                    bluefin_customer.shippingAddress.recipientPhone = parsePhoneNumber(shipping_address.PhoneNumber);
+                }
+
+                if (!string.IsNullOrEmpty(shipping_address.Company))
+                {
+                    bluefin_customer.shippingAddress.company = shipping_address.Company;
+                }
+
+                if(!string.IsNullOrEmpty(shipping_country.ThreeLetterIsoCode))
+                {
+                    bluefin_customer.shippingAddress.country = shipping_country.ThreeLetterIsoCode;
+                }
+
+                if (!string.IsNullOrEmpty(shipping_address.ZipPostalCode))
+                {
+                    bluefin_customer.shippingAddress.zip = shipping_address.ZipPostalCode;
+                }
+
+                if(!string.IsNullOrEmpty(shipping_address.City))
+                {
+                    bluefin_customer.shippingAddress.city = shipping_address.City;
+                }
+
+                if(!string.IsNullOrEmpty(shipping_address.Address1))
+                {
+                    bluefin_customer.shippingAddress.address1 = shipping_address.Address1;
+                }
+
+                if(!string.IsNullOrEmpty(shipping_address.Address2))
+                {
+                    bluefin_customer.shippingAddress.address2 = shipping_address.Address2;
+                }
+
+                if (!string.IsNullOrEmpty(shipping_stateProvince.Abbreviation))
+                {
+                    bluefin_customer.shippingAddress.state = shipping_stateProvince.Abbreviation;
+                }
+
+
+            } else
+            {
+                bluefin_customer.shippingAddress = null;
+            }
+
+            /*
+            new_order.BillingAddressId = order.BillingAddressId;
+
+            if (order.ShippingAddressId != null)
+            {
+                new_order.ShippingAddressId = order.ShippingAddressId;
+            }
+            */
+
+
+            transaction_res = await _gateway.ProcessMITSale(transaction, bluefin_customer);
 
             if (!transaction_res.IsSuccess)
             {
@@ -613,7 +782,7 @@ public class PaymentBluefinController : BasePaymentController
 
         var order = await _orderService.GetOrderByIdAsync(id);
 
-        var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
+        // var model = await _orderModelFactory.PrepareOrderModelAsync(null, order);
 
         ReissueOrderEntry reissue_entry = await _reissueOrdersRepositoryService.GetBfTokenByOrderGuid(order.OrderGuid.ToString());
 
