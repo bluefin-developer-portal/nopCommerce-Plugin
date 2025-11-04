@@ -182,12 +182,13 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.EnableClickToPay"] = "Click to Pay",
             ["Plugins.Payments.Bluefin.Fields.PaymentMethod.Required"] = "At least one payment method must be selected.",
 
-
             ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalPaymentId"] = "Original Order Id",
             ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderStatus"] = "Original Order Status",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderGuid"] = "Original Order Guid",
             ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalPaymentStatus"] = "Original Order Payment Status",
             ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderTotal"] = "Original Order Total",
             ["Plugins.Payments.Bluefin.Fields.ReissueOrder.ReissueTotal"] = "Reissue Total (Decimal)",
+
         });
 
         await base.InstallAsync();
@@ -452,6 +453,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
 
+                // newtonsoft.json.linq.jobject
                 dynamic metadata = transaction_res.Metadata;
 
                 string err_message;
@@ -482,12 +484,20 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                     err_message = string.IsNullOrEmpty(resource_message) ?
                         JsonConvert.SerializeObject(metadata)
                         : resource_message;
+                    
+                    // Transaction ID used if the transaction.status has been declined or failed. The customer has to reload the page and try checking out again.
+                    if(metadata.ContainsKey("message")
+                        && metadata.message == "Transaction ID has already been used")
+                    {
+                        err_message = "Previous transaction has failed. Please, reload the page and try checking out again.";
+                    }
                 }
                 // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
                 processPaymentResult.AddError(err_message);
             }
 
             // Clean up the custom values that shouldn't be in the final order
+            // It would make more sense to remove these after the transaction has succeeded. However, this works too.
             {
                 CustomValues.Remove("bfTokenReference");
                 CustomValues.Remove("savePaymentOption");

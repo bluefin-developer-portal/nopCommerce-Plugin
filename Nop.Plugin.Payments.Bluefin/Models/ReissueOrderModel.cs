@@ -20,6 +20,7 @@ public record ReissueOrderModel : BaseNopModel
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderStatus")] 
     public OrderStatus OrderStatus { get; set; }
 
+    [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderGuid")]
     public Guid OrderGuid { get; set; }
 
     [NopResourceDisplayName("Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalPaymentStatus")]

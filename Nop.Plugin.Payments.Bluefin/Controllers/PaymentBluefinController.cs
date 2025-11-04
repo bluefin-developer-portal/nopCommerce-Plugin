@@ -585,30 +585,36 @@ public class PaymentBluefinController : BasePaymentController
                 CustomerLanguageId = customer_language.Id,
                 // CustomerTaxDisplayType = order.CustomerTaxDisplayType,
                 CustomerIp = _webHelper.GetCurrentIpAddress(),
+
                 /*
                 OrderSubtotalInclTax = order.OrderSubtotalInclTax,
                 OrderSubtotalExclTax = order.OrderSubtotalExclTax,
                 OrderSubTotalDiscountInclTax = order.OrderSubTotalDiscountInclTax,
                 OrderSubTotalDiscountExclTax = order.OrderSubTotalDiscountExclTax,
-                OrderShippingInclTax = order.OrderShippingInclTax,
-                OrderShippingExclTax = order.OrderShippingExclTax,
                 PaymentMethodAdditionalFeeInclTax = order.PaymentMethodAdditionalFeeInclTax,
                 PaymentMethodAdditionalFeeExclTax = order.PaymentMethodAdditionalFeeExclTax,
-                TaxRates = order.TaxRates,
-                OrderTax = order.OrderTax,
                 */
+
+                // TaxRates = order.TaxRates,
+                // OrderTax = order.OrderTax,
+
+                // OrderShippingInclTax = order.OrderShippingInclTax,
+                // OrderShippingExclTax = order.OrderShippingExclTax,
                 OrderTotal = reissueOrderTotal,
-                /*
                 RefundedAmount = order.RefundedAmount,
+
+                /*
                 OrderDiscount = order.OrderDiscount,
                 CheckoutAttributeDescription = order.CheckoutAttributeDescription,
                 CheckoutAttributesXml = order.CheckoutAttributesXml,
                 */
+
                 CustomerCurrencyCode = order.CustomerCurrencyCode,
-                /*
                 CurrencyRate = order.CurrencyRate,
+                // OrderStatus = order.OrderStatus,
+
+                /*
                 AffiliateId = order.AffiliateId,
-                OrderStatus = order.OrderStatus,
                 AllowStoringCreditCardNumber = order.AllowStoringCreditCardNumber,
                 CardType = order.CardType,
                 CardName = order.CardName,
@@ -618,7 +624,9 @@ public class PaymentBluefinController : BasePaymentController
                 CardExpirationMonth = order.CardExpirationMonth,
                 CardExpirationYear = order.CardExpirationYear,
                 */
+
                 PaymentMethodSystemName = order.PaymentMethodSystemName,
+
                 /*
                 AuthorizationTransactionId = order.AuthorizationTransactionId,
                 AuthorizationTransactionCode = order.AuthorizationTransactionCode,
@@ -627,6 +635,7 @@ public class PaymentBluefinController : BasePaymentController
                 CaptureTransactionResult = order.CaptureTransactionResult,
                 SubscriptionTransactionId = order.SubscriptionTransactionId,
                 */
+
                 PaymentStatus = processPaymentResult.NewPaymentStatus,
                 PaidDateUtc = null,
                 PickupInStore = order.PickupInStore,
@@ -706,6 +715,9 @@ public class PaymentBluefinController : BasePaymentController
                 DisplayToCustomer = false,
                 CreatedOnUtc = DateTime.UtcNow
             });
+
+            _notificationService.SuccessNotification(
+                "Order successfully reissued as " + "orderId of " + new_order.Id.ToString() + " with " + "orderGuid of " + new_order_guid.ToString());
 
         }
 
@@ -796,7 +808,7 @@ public class PaymentBluefinController : BasePaymentController
             ReissueTotal = order_model.ReissueTotal,
         };
 
-        await _gateway.LogDebug("reissue_order_model ReissueTotal " + order_model.ReissueTotal.ToString(), "");
+        // await _gateway.LogDebug("reissue_order_model ReissueTotal " + order_model.ReissueTotal.ToString(), "");
 
         if (reissue_entry == null)
         {
@@ -809,17 +821,17 @@ public class PaymentBluefinController : BasePaymentController
         var success = await ProcessAndPlaceOrder(BfTokenReference, order_model);
 
 
-        await _gateway.LogDebug("(order_model == null) " + (order_model == null).ToString(), "");
+        // await _gateway.LogDebug("(order_model == null) " + (order_model == null).ToString(), "");
 
-        await _gateway.LogDebug("order_model Id " + order_model.Id, "");
-        await _gateway.LogDebug("order_model OrderStatus " + order_model.OrderStatus, "");
-        await _gateway.LogDebug("order_model PaymentStatus " + order_model.PaymentStatus, "");
+        // await _gateway.LogDebug("order_model Id " + order_model.Id, "");
+        // await _gateway.LogDebug("order_model OrderStatus " + order_model.OrderStatus, "");
+        // await _gateway.LogDebug("order_model PaymentStatus " + order_model.PaymentStatus, "");
 
 
         if (success)
         {
-            _notificationService.SuccessNotification(
-                "Reissued order created with Bluefin token: " + BfTokenReference + " for guid: " + reissue_entry.OrderGuid);
+            // _notificationService.SuccessNotification(
+            //    "Reissued order created with Bluefin token: " + BfTokenReference + " for guid: " + reissue_entry.OrderGuid);
         }
         else
         {
