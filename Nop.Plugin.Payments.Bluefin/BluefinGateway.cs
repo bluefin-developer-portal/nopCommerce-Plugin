@@ -25,7 +25,9 @@ public class BluefinCustomer
     public string Amount { get; set; } // TODO: Refactor to an Order class or similar
     public string Currency { get; set; }
     public BillingAddress BillingAddress { get; set; }
-    public ShippingAddress ShippingAddress { get; set; }
+    #nullable enable
+    public ShippingAddress? ShippingAddress { get; set; }
+    #nullable disable
 }
 
 public class BillingAddress
@@ -64,6 +66,10 @@ public class Transaction
     public string BfTokenReference { get; set; }
 
     public string Description { get; set; }
+
+    #nullable enable
+    public string? CustomId { get; set; }
+    #nullable disable
 }
 
 public class TransactionResponse
@@ -78,6 +84,24 @@ public class RefundTransaction
     public string AmountToRefund { get; set; }
 
     public string Currency { get; set; }
+
+    #nullable enable
+    public string? CustomId { get; set; }
+    #nullable disable
+}
+
+public class TransactionMIT
+{
+    public string TransactionId { get; set; }
+    public string Total { get; set; }
+    public string Currency { get; set; }
+    public string BfTokenReference { get; set; }
+
+    public string Description { get; set; }
+
+    #nullable enable
+    public string? CustomId { get; set; }
+    #nullable disable
 }
 
 public class Utility
@@ -192,7 +216,7 @@ public class Utility
         ).Wait();
         */
 
-        string bfPaymentType= "";
+        string bfPaymentType = "";
 
         try
         {
@@ -611,6 +635,19 @@ public class BluefinGateway : BluefinLogger
         };
     }
 
+    public dynamic MakeMITParameters()
+    {
+        return new
+        {
+            credentialOnFile = new
+            {
+                transactionInitiator = "MERCHANT",
+                storedCredentialIndicator = "SUBSEQUENT",
+                scheduleIndicator = "UNSCHEDULED"
+            }
+        };
+    }
+
 
     public async Task<TransactionResponse> CaptureAuthorization(string transactionId)
     {
@@ -657,7 +694,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             }
         };
 
@@ -695,7 +733,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
@@ -734,7 +773,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             },
             bfTokenReference = transaction.BfTokenReference,
             credentialOnFile = MakeCITParameters().credentialOnFile
@@ -755,6 +795,62 @@ public class BluefinGateway : BluefinLogger
 
     }
 
+    public async Task<TransactionResponse> ProcessMITSale(TransactionMIT transaction, dynamic bluefin_customer)
+    {
+        string accountId = _bluefinPaymentSettings.AccountId;
+
+        string URI = "/api/v4/accounts/" +
+                    accountId + "/payments/sale";
+
+
+        dynamic request = new ExpandoObject();
+
+        request.description = string.IsNullOrEmpty(transaction.Description) ? "" : transaction.Description;
+        request.posProfile = "ECOMMERCE";
+        request.amounts = new
+        {
+            total = transaction.Total,
+            currency = transaction.Currency,
+        };
+        request.trace = new
+        {
+            source = "nopCommerce Plugin",
+            customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId,
+        };
+
+        request.bfTokenReference = transaction.BfTokenReference;
+        request.credentialOnFile = MakeMITParameters().credentialOnFile;
+
+
+        if(bluefin_customer.customer != null)
+        {
+            request.customer = bluefin_customer.customer;
+        }
+
+        if(bluefin_customer.shippingAddress != null)
+        {
+            request.shippingAddress = bluefin_customer.shippingAddress;
+        } else
+        {
+            ((IDictionary<string, object>)request).Remove("shippingAddress");
+        }
+
+        HttpRequestMessage requestMessage = null;
+
+        var serializedBody = JsonConvert.SerializeObject(request);
+
+        requestMessage = new HttpRequestMessage(HttpMethod.Post, _baseEnvURL + URI)
+        {
+            Content = new StringContent(serializedBody, Encoding.UTF8, "application/json")
+        };
+
+        InjectHeaders(requestMessage, URI, serializedBody);
+
+        return await HandleTransactionRequest(requestMessage, request, "BluefinGateway.processSale ERROR");
+
+    }
+
+
     public async Task<TransactionResponse> ProcessACHSale(Transaction transaction)
     {
         string accountId = _bluefinPaymentSettings.AccountId;
@@ -772,7 +868,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             },
             bfTokenReference = transaction.BfTokenReference
         };
@@ -808,7 +905,8 @@ public class BluefinGateway : BluefinLogger
             },
             trace = new
             {
-                source = "nopCommerce Plugin"
+                source = "nopCommerce Plugin",
+                customId = string.IsNullOrEmpty(transaction.CustomId) ? "" : transaction.CustomId
             }
         };
 

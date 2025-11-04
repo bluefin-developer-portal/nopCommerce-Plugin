@@ -20,6 +20,7 @@ public class SchemaMigration : AutoReversingMigration
     {
         Create.TableFor<BluefinTokenEntry>();
         Create.TableFor<TraceIdEntry>();
+        Create.TableFor<ReissueOrderEntry>();
     }
 
     #endregion

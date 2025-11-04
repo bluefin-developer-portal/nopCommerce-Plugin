@@ -47,7 +47,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
     #region Fields
     // private readonly ILogger _logger;
 
-    private readonly IGenericAttributeService _genericAttributeService;
+    // private readonly IGenericAttributeService _genericAttributeService;
     private readonly IWorkContext _workContext;
 
     private readonly IProductService _productService;
@@ -74,6 +74,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
     private readonly BluefinPaymentSettings _bluefinPaymentSettings;
     private readonly BluefinTokenRepositoryService _bluefinTokenRepositoryService;
+    private readonly ReissueOrdersRepositoryService _reissueOrdersRepositoryService;
 
     private readonly BluefinGateway _gateway;
 
@@ -82,7 +83,6 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
     #region Ctor
 
     public BluefinPaymentProcessor(ILogger logger,
-        IGenericAttributeService genericAttributeService,
         ILocalizationService localizationService,
         ISettingService settingService,
         INotificationService notificationService,
@@ -91,6 +91,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         IStoreContext storeContext,
         BluefinPaymentSettings bluefinPaymentSettings,
         BluefinTokenRepositoryService bluefinTokenRepositoryService,
+        ReissueOrdersRepositoryService reissueOrdersRepositoryService,
         TraceLogsRepositoryService traceLogsRepositoryService,
         IProductService productService,
         IShoppingCartService shoppingCartService,
@@ -101,7 +102,6 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         )
     {
         _storeContext = storeContext;
-        _genericAttributeService = genericAttributeService;
         _workContext = workContext;
         _productService = productService;
         _shoppingCartService = shoppingCartService;
@@ -113,6 +113,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         _webHelper = webHelper;
         _bluefinPaymentSettings = bluefinPaymentSettings;
         _bluefinTokenRepositoryService = bluefinTokenRepositoryService;
+        _reissueOrdersRepositoryService = reissueOrdersRepositoryService;
         _gateway = new BluefinGateway(
             logger,
             _bluefinPaymentSettings,
@@ -179,7 +180,15 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             ["Plugins.Payments.Bluefin.Fields.EnableACH"] = "ACH (Bank Transfer)",
             ["Plugins.Payments.Bluefin.Fields.EnableGooglePay"] = "Google Pay",
             ["Plugins.Payments.Bluefin.Fields.EnableClickToPay"] = "Click to Pay",
-            ["Plugins.Payments.Bluefin.Fields.PaymentMethod.Required"] = "At least one payment method must be selected."
+            ["Plugins.Payments.Bluefin.Fields.PaymentMethod.Required"] = "At least one payment method must be selected.",
+
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalPaymentId"] = "Original Order Id",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderStatus"] = "Original Order Status",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderGuid"] = "Original Order Guid",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalPaymentStatus"] = "Original Order Payment Status",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.OriginalOrderTotal"] = "Original Order Total",
+            ["Plugins.Payments.Bluefin.Fields.ReissueOrder.ReissueTotal"] = "Reissue Total (Decimal)",
+
         });
 
         await base.InstallAsync();
@@ -280,13 +289,13 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         await _gateway.LogDebug("productAttributes_string: ", productAttributes_string);
         */
 
+        var CustomValues = processPaymentRequest.CustomValues;
 
+        string bfTokenReference = CustomValues.ContainsKey("bfTokenReference") ? (string)CustomValues["bfTokenReference"] : "";
+        string paymentType = CustomValues.ContainsKey("paymentType") ? (string)CustomValues["paymentType"] : "";
 
-        string paymentType = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "paymentType", nop_store.Id);
-
-        string bfTokenReference = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id);
-        string bfTransactionId = await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTransactionId", nop_store.Id);
-        bool StoreBluefinToken = await _genericAttributeService.GetAttributeAsync<bool>(nop_customer, "StoreBluefinToken", nop_store.Id, false);
+        string bfTransactionId = CustomValues.ContainsKey("bfTransactionId") ? (string)CustomValues["bfTransactionId"] : "";
+        string savePaymentOption = CustomValues.ContainsKey("savePaymentOption") ? (string)CustomValues["savePaymentOption"] : "";
 
         TransactionResponse transaction_res = null;
 
@@ -303,6 +312,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 Currency = currency.CurrencyCode,
                 BfTokenReference = bfTokenReference,
                 Description = productAttributes_string,
+                CustomId = orderGuid,
             };
 
             transaction_res = await _gateway.ProcessACHSale(transaction);
@@ -320,38 +330,6 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
 
                 // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
-
-                // Consider doing the same for else of transaction_res.IsSuccess. However, that may pose challenges if they retry the transaction during the same checkout session.
-                {
-                    // TODO: Proper Delete. However, this suffices
-                    await _genericAttributeService.SaveAttributeAsync<string>(
-                        nop_customer,
-                        "paymentType",
-                        (string)null, // NOTE: Casting to string is required at compilation time
-                        nop_store.Id
-                    );
-
-                    await _genericAttributeService.SaveAttributeAsync<string>(
-                        nop_customer,
-                        "bfTokenReference",
-                        (string)null, // NOTE: Casting to string is required at compilation time
-                        nop_store.Id
-                    );
-
-                    await _genericAttributeService.SaveAttributeAsync<string>(
-                        nop_customer,
-                        "bfTransactionId",
-                        (string)null, // NOTE: Casting to string is required at compilation time
-                        nop_store.Id
-                    );
-
-                    await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
-
-                    await _gateway.LogDebug(
-                        "Generic attribute cleanup",
-                        await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
-                    );
-                }
 
                 // See: https://webiant.com/docs/nopcommerce/Libraries/Nop.Core/Domain/Payments/PaymentStatus
                 processPaymentResult.NewPaymentStatus = PaymentStatus.Paid;
@@ -393,6 +371,14 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
                 processPaymentResult.AddError(err_message);
             }
+
+            // Clean up the custom values that shouldn't be in the final order
+            {
+                CustomValues.Remove("bfTokenReference");
+                CustomValues.Remove("savePaymentOption");
+                CustomValues.Remove("bfTransactionId");
+                CustomValues.Remove("paymentType");
+            }
         }
         else
         {
@@ -403,6 +389,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                 Currency = currency.CurrencyCode,
                 BfTokenReference = bfTokenReference,
                 Description = productAttributes_string,
+                CustomId = orderGuid,
             };
 
 
@@ -420,7 +407,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
             if (transaction_res.IsSuccess)
             {
-                if (StoreBluefinToken
+                if (!string.IsNullOrEmpty(savePaymentOption)
                     && IsTokenVaulated(transaction_res))
                 {
                     await _bluefinTokenRepositoryService.InsertAsync(
@@ -439,40 +426,18 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
                 processPaymentRequest.CustomValues.Add("Bluefin Transaction Identifier", transaction_res.Metadata.transactionId);
 
-                // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
-
-                // Consider doing the same for else of transaction_res.IsSuccess. However, that may pose challenges if they retry the transaction during the same checkout session.
+                // Reissuing Order. Consider only doing this with IsTokenVaulted() evaluating to true
                 {
-                    // TODO: Proper Delete. However, this suffices
-                    await _genericAttributeService.SaveAttributeAsync<string>(
-                        nop_customer,
-                        "paymentType",
-                        (string)null, // NOTE: Casting to string is required at compilation time
-                        nop_store.Id
-                    );
-
-                    await _genericAttributeService.SaveAttributeAsync<string>(
-                        nop_customer,
-                        "bfTokenReference",
-                        (string)null, // NOTE: Casting to string is required at compilation time
-                        nop_store.Id
-                    );
-
-                    await _genericAttributeService.SaveAttributeAsync<string>(
-                        nop_customer,
-                        "bfTransactionId",
-                        (string)null, // NOTE: Casting to string is required at compilation time
-                        nop_store.Id
-                    );
-
-                    await _genericAttributeService.SaveAttributeAsync(nop_customer, "StoreBluefinToken", false, nop_store.Id);
-
-                    await _gateway.LogDebug(
-                        "Generic attribute cleanup",
-                        await _genericAttributeService.GetAttributeAsync<string>(nop_customer, "bfTokenReference", nop_store.Id)
+                    await _reissueOrdersRepositoryService.InsertAsync(
+                        new ReissueOrderEntry
+                        {
+                            OrderGuid = orderGuid,
+                            BfTokenReference = bfTokenReference
+                        }
                     );
                 }
 
+                // processPaymentRequest.CustomValues.Add("Bluefin Transaction Status", transaction_res.metadata.status);
 
                 // See: https://webiant.com/docs/nopcommerce/Libraries/Nop.Core/Domain/Payments/PaymentStatus
                 if (_bluefinPaymentSettings.UseAuthorizeOnly)
@@ -488,6 +453,7 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 processPaymentResult.NewPaymentStatus = PaymentStatus.Pending;
 
+                // newtonsoft.json.linq.jobject
                 dynamic metadata = transaction_res.Metadata;
 
                 string err_message;
@@ -518,9 +484,25 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
                     err_message = string.IsNullOrEmpty(resource_message) ?
                         JsonConvert.SerializeObject(metadata)
                         : resource_message;
+                    
+                    // Transaction ID used if the transaction.status has been declined or failed. The customer has to reload the page and try checking out again.
+                    if(metadata.ContainsKey("message")
+                        && metadata.message == "Transaction ID has already been used")
+                    {
+                        err_message = "Previous transaction has failed. Please, reload the page and try checking out again.";
+                    }
                 }
                 // TODO: Sort out if we proceed with the payment or block it on the spot with AddError
                 processPaymentResult.AddError(err_message);
+            }
+
+            // Clean up the custom values that shouldn't be in the final order
+            // It would make more sense to remove these after the transaction has succeeded. However, this works too.
+            {
+                CustomValues.Remove("bfTokenReference");
+                CustomValues.Remove("savePaymentOption");
+                CustomValues.Remove("bfTransactionId");
+                CustomValues.Remove("paymentType");
             }
         }
 
@@ -605,6 +587,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
         var refundResult = new RefundPaymentResult();
         var amount = refundPaymentRequest.AmountToRefund.ToString("0.00");
 
+        var orderGuid = refundPaymentRequest.Order.OrderGuid.ToString();
+
         await _gateway.LogDebug(
             "Triggered RefundAsync amount: " + amount,
             "Transaction Res Metadata: "
@@ -631,7 +615,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 TransactionId = bfTransactionId,
                 AmountToRefund = amount,
-                Currency = refundPaymentRequest.Order.CustomerCurrencyCode
+                Currency = refundPaymentRequest.Order.CustomerCurrencyCode,
+                CustomId = orderGuid,
             };
 
             var refunded_res = await _gateway.ProcessACHRefund(refund_transaction);
@@ -661,7 +646,8 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
             {
                 TransactionId = bfTransactionId,
                 AmountToRefund = amount,
-                Currency = refundPaymentRequest.Order.CustomerCurrencyCode
+                Currency = refundPaymentRequest.Order.CustomerCurrencyCode,
+                CustomId = orderGuid,
             };
 
             var refunded_res = await _gateway.ProcessRefund(refund_transaction);
@@ -721,10 +707,38 @@ public class BluefinPaymentProcessor : BasePlugin, IPaymentMethod
 
     public Task<ProcessPaymentRequest> GetPaymentInfoAsync(IFormCollection form)
     {
+        /*
+        string bfTokenReference = CustomValues.ContainsKey("bfTokenReference") ? (string)CustomValues["bfTokenReference"] : "";
+        string paymentType = CustomValues.ContainsKey("paymentType") ? (string)CustomValues["paymentType"] : "";
+
+        string bfTransactionId = CustomValues.ContainsKey("bfTransactionId") ? (string)CustomValues["bfTransactionId"] : "";
+        string savePaymentOption = CustomValues.ContainsKey("savePaymentOption") ? (string)CustomValues["savePaymentOption"] : "";
+        */
+
         if (form == null)
             throw new ArgumentNullException(nameof(form));
 
         var paymentInfo = new ProcessPaymentRequest();
+
+        if (form.TryGetValue("BfTokenReference", out StringValues BfTokenReference))
+        {
+            paymentInfo.CustomValues.Add("bfTokenReference", BfTokenReference[0]);
+        }
+
+        if (form.TryGetValue("BluefinPaymentType", out StringValues BluefinPaymentType))
+        {
+            paymentInfo.CustomValues.Add("paymentType", BluefinPaymentType[0]);
+        }
+
+        if (form.TryGetValue("BfTransactionId", out StringValues BfTransactionId))
+        {
+            paymentInfo.CustomValues.Add("bfTransactionId", BfTransactionId[0]);
+        }
+
+        if (form.TryGetValue("BluefinSavePaymentOption", out StringValues BluefinSavePaymentOption))
+        {
+            paymentInfo.CustomValues.Add("savePaymentOption", BluefinSavePaymentOption[0]);
+        }
 
         return Task.FromResult(paymentInfo);
     }

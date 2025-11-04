@@ -17,6 +17,11 @@
 }
 
 <style>
+
+    .custom-value {
+        display: none !important;
+    }
+
     #bluefin-iframe-container {
         width: 100%;
         min-height: 400px;
@@ -46,9 +51,15 @@
 </style>
 
 <input asp-for="IFrameCompleted" id="IFrameCompleted" type="hidden" />
+<input asp-for="BfTokenReference" id="BfTokenReference" type="hidden" />
+<input asp-for="BluefinPaymentType" id="BluefinPaymentType" type="hidden" />
+<input asp-for="BfTransactionId" id="BfTransactionId" type="hidden" />
+<input asp-for="BluefinSavePaymentOption" id="BluefinSavePaymentOption" type="hidden" />
+
 <div id="bluefin-iframe-container"></div>
 
 <script>
+    // document.addEventListener("DOMContentLoaded", function() {
     ; (function () {
 
         const id = setInterval(() => {
@@ -246,53 +257,19 @@
                     console.debug('Iframe loaded')
                 },
                 checkoutComplete: async function (data) {
+                    const iFrameCompleted = document.getElementById('IFrameCompleted')
+                    const BfTokenReference_input = document.getElementById('BfTokenReference')
+
+                    const BluefinPaymentType = document.getElementById('BluefinPaymentType')
+                    const BluefinSavePaymentOption = document.getElementById('BluefinSavePaymentOption')
+
                     const bfTokenReference = data.bfTokenReference
 
                     const paymentType = data.data.type
 
                     try {
-                        let response = await fetch('@(Url.Action("SetBluefinToken", "PaymentBluefin"))', {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/x-www-form-urlencoded",
-                            },
-                            body: new URLSearchParams({
-                                bfTokenReference,
-                                paymentType,
-                            })
-
-                        })
-
-                        if(!response.ok) {
-                            let err = new Error("HTTP status code: " + response.status)
-                            err.response = response
-                            err.status = response.status
-                            throw err
-                        }
-
-
                         if (data.data.meta.savePaymentOption) {
-                            let response = await fetch('@(Url.Action("StoreBluefinToken", "PaymentBluefin"))', {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/x-www-form-urlencoded",
-                                },
-                                /*
-                                body: new URLSearchParams({
-                                    customerId: '@customer.Id',
-                                    bfTokenReference,
-                                })
-                                */
-
-                            })
-
-                            if(!response.ok) {
-                                let err = new Error("HTTP status code: " + response.status)
-                                err.response = response
-                                err.status = response.status
-                                throw err
-                            }
-
+                            BluefinSavePaymentOption && (BluefinSavePaymentOption.value = "Save Payment Credentials")
                         }
 
                     } catch (err) {
@@ -301,7 +278,12 @@
                         return
                     }
 
-                    document.getElementById('IFrameCompleted').value = 'Checkout Completed'
+                    BluefinPaymentType && (BluefinPaymentType.value = paymentType)
+
+
+                    iFrameCompleted && (iFrameCompleted.value = 'Checkout Completed')
+                    BfTokenReference_input && (BfTokenReference_input.value = bfTokenReference)
+
                     PaymentInfo.save()
 
                     // console.debug('Checkout complete:', data)
@@ -334,6 +316,10 @@
                     url: '@(Url.Action("InitIframe", "PaymentBluefin"))',
                     data: customer,
                     success: function (data) {
+                        const BfTransactionId = document.getElementById('BfTransactionId')
+
+                        BfTransactionId && (BfTransactionId.value = data.transactionId)
+
                         window.bearerToken = data.bearerToken
                         window.IframeV2.init(iframeConfig,
                             data.bearerToken,

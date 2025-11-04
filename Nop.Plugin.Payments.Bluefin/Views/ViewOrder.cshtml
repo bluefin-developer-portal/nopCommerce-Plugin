@@ -1,0 +1,143 @@
+@model ReissueOrderModel
+
+@{
+    // ViewBag.PageTitle = "Bluefin Reissue Orders";
+
+    Layout = "_AdminLayout";
+}
+
+<form asp-controller="PaymentBluefin" asp-action="EditOrder" method="post" asp-route-id="@Model.Id">
+    <div class="content-header clearfix">
+        <h1>
+            Order Details
+            <small>
+                <i class="fas fa-arrow-circle-left"></i>
+                <a asp-action="ReissueOrders">Back to Bluefin Reissue Orders</a>
+            </small>
+        </h1>
+    </div>
+
+    <section class="content">
+        <div class="container-fluid">
+            <div class="form-horizontal">
+                <div class="cards-group">
+                    <div class="card card-default">
+                        <div class="card-body">
+
+                            <blockquote>
+                                <p>
+                                <p style="line-height: 0;">
+                                    To add products to the newly reissued order after applying the order amonts, go to Sales -> Orders with the reissued order id, click on View scroll down to Products and Add Products.
+                                </p>
+                                <br/>
+                                
+                                <p style="line-height: 0;">
+                                    Please, make sure that the order amounts total matches the total of products added.
+                                    It is optimal that the merchant uses their own generic products to specify the purpose or details of the additional charge.
+                                </p>
+
+                                <br/>
+
+                                <p style="line-height: 0;">
+                                    The shipping and billing address is based on the previous/initial order.
+                                </p>
+
+                                For more details on reissuing orders, make sure to check out the following documentation with our step-by-step tutorial
+                                <a href="https://developers.bluefin.com/payconex/v4/reference/nopcommerce-plugin-for-bluefin#reissue-orders-component"
+                                    target="_blank" rel="noopener noreferrer">
+                                    nopCommerce Plugin for Bluefin | Reissue Orders Component
+                                </a>
+                                </p>
+                            </blockquote>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="Id" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.Id</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="OrderStatus" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.OrderStatus</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="OrderGuid" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.OrderGuid</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="PaymentStatus" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.PaymentStatus</div>
+                                </div>
+                            </div>
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="OrderTotal" />
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="form-text-row">@Model.OrderTotal</div>
+                                </div>
+                            </div>
+                        
+
+                            <div class="form-group row">
+                                <div class="col-md-3">
+                                    <nop-label asp-for="ReissueTotal" />
+                                </div>
+                                <div class="col-md-9">
+                                    <nop-editor asp-for="ReissueTotal" asp-required="true" />
+                                </div>
+                            </div>
+
+
+
+                            @*
+                            <div>
+                                <input name="_AAA" id="_AAA" type="hidden" />
+                            </div>
+                            *@
+
+
+                            <div class="form-group row">
+                                <div class="col-md-9 offset-md-3">
+                                    <button type="submit" name="reissueorder" id="reissueorder" class="btn btn-primary">
+                                        Reissue Order
+                                    </button>
+                                    <text>&nbsp;</text>
+                                    <nop-action-confirmation asp-button-id="reissueorder" />
+                                </div>
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        ; $(document).ready(function () {
+
+
+        });
+
+    </script>
+
+</form>
